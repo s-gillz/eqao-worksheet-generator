@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EQAO Pro - AI Intelligence Engine</title>
+    <title>EQAO AI Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -12,73 +12,32 @@
         @media print {
             .no-print { display: none !important; }
             .page-break { page-break-before: always; }
-            body { background: white !important; margin: 0; padding: 0; }
-            @page { margin: 0.5in; }
-            .sheet-container { 
-                box-shadow: none !important; 
-                border: none !important; 
-                padding: 0 !important; 
-                width: 100% !important; 
-                margin: 0 !important;
-            }
+            body { background: white !important; }
+            .sheet-container { box-shadow: none !important; border: none !important; padding: 0 !important; }
         }
-        .grid-pattern { 
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3b82f6;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .grid-pattern { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-neutral-100 font-sans text-slate-900">
+<body class="bg-slate-50 font-sans text-slate-900">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
         
-        /**
-         * 1. GO TO: https://aistudio.google.com/
-         * 2. CREATE API KEY
-         * 3. PASTE KEY BELOW
-         */
+        // --- PASTE YOUR API KEY HERE ---
         const apiKey = "AIzaSyDIx0iwJloKHZ1vxLPNWGYOiNwYBhBHH_o"; 
-
-        const Icons = {
-            Printer: () => (
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-            ),
-            Sparkles: () => (
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>
-            ),
-            Cpu: () => (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
-            ),
-            Alert: () => (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            )
-        };
 
         const App = () => {
             const [grade, setGrade] = useState(6);
             const [questions, setQuestions] = useState([]);
             const [isGenerating, setIsGenerating] = useState(false);
             const [error, setError] = useState(null);
-            const [showAnswerKey, setShowAnswerKey] = useState(true);
-            const [showRubric, setShowRubric] = useState(true);
 
-            const generateAITest = async () => {
-                if (!apiKey || apiKey.length < 10) {
-                    setError("API Key Missing or Too Short. Please paste your key from Google AI Studio into the code.");
+            const generateTest = async () => {
+                if (!apiKey) {
+                    setError("API Key is missing. Please edit the code to include your Gemini API key.");
                     return;
                 }
 
@@ -86,219 +45,144 @@
                 setError(null);
                 
                 try {
-                    // Using v1beta for better compatibility with standard API keys
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                    // Using the stable V1 endpoint and 'gemini-1.5-flash-latest' alias
+                    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
                     
-                    const systemPrompt = `You are an Ontario Teacher. Create 10 EQAO math questions for Grade ${grade}. Return ONLY JSON with "questions" array. Each question: type ("mc" or "open"), strand, text, options (if mc), answer, and rubric (explanation).`;
-
-                    const payload = {
-                        contents: [{ 
-                            parts: [{ text: `Generate 10 math questions for Grade ${grade} based on Ontario curriculum.` }] 
-                        }],
-                        systemInstruction: { 
-                            parts: [{ text: systemPrompt }] 
-                        },
-                        generationConfig: { 
-                            responseMimeType: "application/json"
-                        }
-                    };
+                    const prompt = `Create 10 EQAO math questions for Grade ${grade} (Ontario Curriculum). Return valid JSON: { "questions": [ { "type": "mc", "strand": "Number", "text": "Question text?", "options": ["A", "B", "C", "D"], "answer": "B", "rubric": "Explanation" } ] }. Use "mc" for multiple choice and "open" for open response.`;
 
                     const response = await fetch(url, {
                         method: "POST",
-                        headers: { 
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(payload)
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
                     });
 
+                    const result = await response.json();
+                    
                     if (!response.ok) {
-                        const errData = await response.json();
-                        throw new Error(errData.error?.message || `API Error: ${response.statusText}`);
+                        throw new Error(result.error?.message || "API connection failed");
                     }
 
-                    const result = await response.json();
-                    const textResponse = result.candidates[0].content.parts[0].text;
-                    const parsedResponse = JSON.parse(textResponse);
-                    
-                    const aiData = parsedResponse.questions || [];
-                    setQuestions(aiData.map((q, idx) => ({ 
-                        ...q, 
-                        keyId: `q-${idx}-${Date.now()}` 
-                    })));
+                    const rawText = result.candidates[0].content.parts[0].text;
+                    const data = JSON.parse(rawText);
+                    setQuestions(data.questions || []);
                     
                 } catch (err) {
-                    console.error("Generation error:", err);
-                    setError(`Failed: ${err.message}. Ensure your API key is correct and has Gemini API enabled.`);
+                    setError(err.message);
                 } finally {
                     setIsGenerating(false);
                 }
             };
 
-            // Initial load
-            useEffect(() => {
-                if(apiKey) generateAITest();
-            }, []);
-
-            const mcQuestions = questions.filter(q => q.type === 'mc');
-            const openQuestions = questions.filter(q => q.type === 'open');
-
             return (
-                <div className="min-h-screen pb-20">
-                    <nav className="no-print bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-2xl border-b border-blue-500/50">
-                        <div className="max-w-7xl mx-auto flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                <div className="bg-blue-600 p-2 rounded-lg shadow-lg">
-                                    <Icons.Cpu />
-                                </div>
-                                <div className="hidden sm:block text-left">
-                                    <h1 className="text-lg font-black tracking-tighter uppercase italic leading-tight">EQAO AI Engine</h1>
-                                    <p className="text-[10px] text-blue-400 font-bold tracking-widest uppercase italic leading-none">
-                                        {apiKey ? "✅ API Key Detected" : "❌ No API Key Found"}
-                                    </p>
-                                </div>
+                <div className="min-h-screen pb-12">
+                    <nav className="no-print bg-white border-b border-slate-200 p-4 sticky top-0 z-50">
+                        <div className="max-w-6xl mx-auto flex items-center justify-between">
+                            <div className="flex flex-col text-left">
+                                <h1 className="font-black text-xl tracking-tight uppercase italic">EQAO AI Engine</h1>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                                    {apiKey ? "🟢 API Key Ready" : "🔴 Missing API Key"}
+                                </span>
                             </div>
-                            <button 
-                                onClick={() => window.print()} 
-                                className="px-5 py-2 bg-white text-slate-900 rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-slate-200 transition flex items-center"
-                            >
-                                <span className="mr-2"><Icons.Printer /></span> Print / Save PDF
-                            </button>
+                            <div className="flex space-x-3">
+                                <select 
+                                    value={grade} 
+                                    onChange={(e) => setGrade(e.target.value)}
+                                    className="bg-slate-100 rounded-lg px-3 py-2 text-xs font-bold outline-none border-2 border-transparent focus:border-blue-500"
+                                >
+                                    <option value="3">Grade 3</option>
+                                    <option value="6">Grade 6</option>
+                                    <option value="9">Grade 9</option>
+                                </select>
+                                <button 
+                                    onClick={generateTest}
+                                    disabled={isGenerating}
+                                    className="bg-blue-600 hover:bg-slate-900 text-white px-6 py-2 rounded-lg font-black text-xs uppercase transition disabled:opacity-50 flex items-center"
+                                >
+                                    {isGenerating && <div className="loader mr-2"></div>}
+                                    {isGenerating ? "Thinking..." : "Generate Test"}
+                                </button>
+                                <button onClick={() => window.print()} className="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-bold uppercase transition">Print</button>
+                            </div>
                         </div>
                     </nav>
 
-                    <div className="max-w-7xl mx-auto px-4 mt-8">
+                    <div className="max-w-4xl mx-auto p-6">
                         {error && (
-                            <div className="no-print mb-8 p-6 bg-red-50 border-2 border-red-200 rounded-2xl flex items-start space-x-4 text-red-600">
-                                <div className="mt-1"><Icons.Alert /></div>
-                                <div className="text-left">
-                                    <h3 className="font-black uppercase text-xs mb-1">System Error</h3>
-                                    <p className="text-sm font-medium">{error}</p>
-                                </div>
+                            <div className="bg-red-50 border-2 border-red-200 p-4 rounded-xl text-red-700 text-sm font-medium mb-6 text-left">
+                                <p className="font-black uppercase text-[10px] mb-1">System Error</p>
+                                {error}
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                            <aside className="no-print space-y-6">
-                                <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-200 text-left space-y-6 sticky top-24">
-                                    <div>
-                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Target Grade</label>
-                                        <select value={grade} onChange={(e) => setGrade(Number(e.target.value))} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-bold text-sm outline-none focus:border-blue-500 transition mt-1">
-                                            <option value={3}>Grade 3 (Primary)</option>
-                                            <option value={6}>Grade 6 (Junior)</option>
-                                            <option value={9}>Grade 9 (Academic)</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="pt-4 border-t border-slate-100 space-y-2">
-                                        <label className="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={showAnswerKey} onChange={() => setShowAnswerKey(!showAnswerKey)} />
-                                            <span className="text-[10px] font-black uppercase text-slate-600">Show Answers</span>
-                                        </label>
-                                        <label className="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" className="w-4 h-4 rounded text-blue-600" checked={showRubric} onChange={() => setShowRubric(!showRubric)} />
-                                            <span className="text-[10px] font-black uppercase text-slate-600">Show Rubrics</span>
-                                        </label>
-                                    </div>
-
-                                    <button 
-                                        onClick={generateAITest} 
-                                        disabled={isGenerating}
-                                        className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition flex items-center justify-center disabled:opacity-50 shadow-lg"
-                                    >
-                                        {isGenerating ? <div className="loader mr-2"></div> : <span className="mr-2"><Icons.Sparkles /></span>}
-                                        {isGenerating ? 'Generating...' : 'Regenerate'}
-                                    </button>
+                        <div className="sheet-container bg-white shadow-xl rounded-[2rem] border border-slate-200 p-12 min-h-[11in] text-left">
+                            <div className="border-b-4 border-slate-900 pb-4 mb-8 flex justify-between items-end">
+                                <div>
+                                    <h2 className="text-3xl font-black uppercase italic leading-tight">Mathematics</h2>
+                                    <p className="font-bold text-blue-600">EQAO Assessment • Grade {grade}</p>
                                 </div>
-                            </aside>
+                                <div className="text-right">
+                                    <div className="w-48 border-b-2 border-slate-300 h-8 mb-1"></div>
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase">Student Name</span>
+                                </div>
+                            </div>
 
-                            <main className="lg:col-span-3 space-y-6 text-left">
-                                <div className="sheet-container bg-white shadow-2xl p-8 sm:p-12 border border-slate-200 rounded-[2rem] min-h-[11in]">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start border-b-4 border-slate-900 pb-4 mb-8">
-                                        <div className="mb-4 sm:mb-0">
-                                            <h2 className="text-3xl font-black tracking-tighter uppercase leading-tight italic">Practice Test</h2>
-                                            <p className="text-xs font-black text-blue-600 uppercase">Grade {grade} Mathematics</p>
-                                        </div>
-                                        <div className="w-full sm:w-64 border-b-2 border-slate-200 h-12 flex items-end pb-1 text-[8px] font-bold text-slate-300 uppercase italic">Student Name</div>
-                                    </div>
+                            {questions.length === 0 && !isGenerating && (
+                                <div className="py-20 text-center">
+                                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Set your key and click generate to begin</p>
+                                </div>
+                            )}
 
-                                    {isGenerating && questions.length === 0 && (
-                                        <div className="text-center py-20 flex flex-col items-center">
-                                            <div className="loader w-12 h-12 border-4 mb-4"></div>
-                                            <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">AI is creating your test...</p>
-                                        </div>
-                                    )}
-
-                                    <div className="mc-grid grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 mb-12">
-                                        {mcQuestions.map((q, i) => (
-                                            <div key={q.keyId} className="flex space-x-4 break-inside-avoid">
-                                                <div className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-1">{i+1}</div>
-                                                <div className="flex-1 space-y-3 text-left">
-                                                    <p className="text-sm font-bold leading-relaxed text-slate-800">{q.text}</p>
-                                                    <div className="grid grid-cols-1 gap-2">
-                                                        {q.options?.map((opt, oi) => (
-                                                            <div key={oi} className="flex items-center space-x-2 text-[10px] border border-slate-100 p-2 rounded-lg bg-slate-50">
-                                                                <div className="w-5 h-5 rounded-full border-2 border-slate-900 flex items-center justify-center font-black text-[9px] shrink-0 uppercase">{['a','b','c','d'][oi]}</div>
-                                                                <span className="font-bold text-slate-700">{opt}</span>
+                            <div className="space-y-12">
+                                {questions.map((q, i) => (
+                                    <div key={i} className="break-inside-avoid">
+                                        <div className="flex space-x-4">
+                                            <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black shrink-0 mt-1">{i + 1}</div>
+                                            <div className="flex-1 space-y-4">
+                                                <div className="space-y-1">
+                                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest italic">{q.strand}</span>
+                                                    <p className="text-lg font-bold leading-relaxed">{q.text}</p>
+                                                </div>
+                                                
+                                                {q.type === 'mc' ? (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                        {q.options.map((opt, oi) => (
+                                                            <div key={oi} className="flex items-center space-x-3 p-3 border border-slate-100 rounded-xl bg-slate-50">
+                                                                <div className="w-6 h-6 rounded-full border-2 border-slate-900 flex items-center justify-center font-black text-[10px] uppercase shrink-0">
+                                                                    {['a','b','c','d'][oi]}
+                                                                </div>
+                                                                <span className="text-sm font-bold text-slate-700">{opt}</span>
                                                             </div>
                                                         ))}
                                                     </div>
-                                                </div>
+                                                ) : (
+                                                    <div className="h-48 w-full bg-slate-50 border-2 border-slate-100 rounded-2xl grid-pattern"></div>
+                                                )}
                                             </div>
-                                        ))}
+                                        </div>
                                     </div>
-
-                                    <div className="space-y-12 mt-12 border-t-4 border-slate-100 pt-12">
-                                        {openQuestions.map((q, i) => (
-                                            <div key={q.keyId} className="break-inside-avoid space-y-6 text-left">
-                                                <div className="flex items-start space-x-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg shrink-0">{mcQuestions.length + i + 1}</div>
-                                                    <div className="space-y-1">
-                                                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest italic">{q.strand}</span>
-                                                        <p className="text-xl font-bold leading-tight text-slate-900">{q.text}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="h-72 bg-slate-50 border-2 border-slate-100 rounded-[2rem] grid-pattern relative"></div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {questions.length > 0 && (showAnswerKey || showRubric) && (
-                                    <div className="sheet-container bg-white shadow-2xl p-8 sm:p-12 border border-slate-200 rounded-[2rem] page-break mt-8 text-left">
-                                        <h2 className="text-xl font-black uppercase italic mb-8 border-b-2 border-slate-900 pb-2">Scoring Key</h2>
-                                        
-                                        {showAnswerKey && (
-                                            <div className="mb-12">
-                                                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-4">Answers</h3>
-                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                    {mcQuestions.map((q, i) => (
-                                                        <div key={`ans-${i}`} className="flex space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-100 items-center">
-                                                            <div className="font-black text-slate-400 text-xs w-6">{i+1}.</div>
-                                                            <div className="font-black text-slate-900 text-[11px] uppercase">{q.answer}</div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {showRubric && (
-                                            <div className="space-y-8">
-                                                <h3 className="text-[10px] font-black uppercase text-slate-400 mb-4">Rubrics</h3>
-                                                {openQuestions.map((q, i) => (
-                                                    <div key={`rubric-${i}`} className="p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl space-y-4 break-inside-avoid">
-                                                        <span className="font-black text-xs uppercase text-blue-600">Q#{mcQuestions.length + i + 1} Analysis</span>
-                                                        <p className="text-sm font-bold text-slate-900">Result: {q.answer}</p>
-                                                        <div className="p-4 bg-white rounded-xl border border-slate-200">
-                                                            <p className="text-[11px] leading-relaxed text-slate-600">{q.rubric}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </main>
+                                ))}
+                            </div>
                         </div>
+
+                        {questions.length > 0 && (
+                            <div className="sheet-container bg-white shadow-xl rounded-[2rem] border border-slate-200 p-12 mt-8 page-break text-left">
+                                <h3 className="text-xl font-black uppercase italic mb-6 border-b-2 border-slate-900 pb-2">Teacher Scoring Key</h3>
+                                <div className="grid grid-cols-1 gap-6">
+                                    {questions.map((q, i) => (
+                                        <div key={i} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-black text-xs text-blue-600 uppercase tracking-widest">Question {i+1} ({q.type})</span>
+                                                <span className="font-black text-slate-900 uppercase">Answer: {q.answer}</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 leading-relaxed italic">{q.rubric}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
