@@ -271,64 +271,63 @@
     <div class="error-toast" id="errorToast"></div>
 
     <script>
-        let GEMINI_KEY = null;
-        const MODEL_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+    let GEMINI_KEY = null;
 
-        // UI Helpers
-        function lockApiKey() {
-            const input = document.getElementById('apiKey');
-            const val = input.value.trim();
-            if (val.length < 10) return showToast('Please paste a valid Gemini API key.', 'error');
-            GEMINI_KEY = val;
-            input.value = '••••••••••••••••';
-            input.disabled = true;
-            showToast('API key secured for this session.', 'success');
-        }
+    // UI Helpers
+    function lockApiKey() {
+        const input = document.getElementById('apiKey');
+        const val = input.value.trim();
+        if (val.length < 10) return showToast('Please paste a valid Gemini API key.', 'error');
+        GEMINI_KEY = val;
+        input.value = '••••••••••••••••';
+        input.disabled = true;
+        showToast('🔑 API key secured for this session.', 'success');
+    }
 
-        function showToast(msg, type = 'error') {
-            const toast = document.getElementById('errorToast');
-            toast.textContent = msg;
-            toast.style.background = type === 'success' ? '#dcfce7' : '#fee2e2';
-            toast.style.color = type === 'success' ? '#166534' : '#991b1b';
-            toast.style.display = 'block';
-            setTimeout(() => toast.style.display = 'none', 4000);
-        }
+    function showToast(msg, type = 'error') {
+        const toast = document.getElementById('errorToast');
+        toast.textContent = msg;
+        toast.style.background = type === 'success' ? '#dcfce7' : '#fee2e2';
+        toast.style.color = type === 'success' ? '#166534' : '#991b1b';
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 4000);
+    }
 
-        function setLoading(show, text) {
-            document.getElementById('loadingOverlay').classList.toggle('active', show);
-            document.getElementById('statusText').textContent = text || 'Working...';
-            document.getElementById('generateBtn').disabled = show;
-        }
+    function setLoading(show, text) {
+        document.getElementById('loadingOverlay').classList.toggle('active', show);
+        document.getElementById('statusText').textContent = text || 'Working...';
+        document.getElementById('generateBtn').disabled = show;
+    }
 
-        // Test Type Toggle
-        document.getElementById('testType').addEventListener('change', (e) => {
-            const numGroup = document.getElementById('numQGroup');
-            numGroup.style.display = e.target.value === 'full' ? 'none' : 'flex';
-            document.getElementById('numQuestions').value = e.target.value === 'full' ? '' : '10';
-            document.getElementById('strand').value = 'all';
-        });
+    // Test Type Toggle
+    document.getElementById('testType').addEventListener('change', (e) => {
+        const numGroup = document.getElementById('numQGroup');
+        numGroup.style.display = e.target.value === 'full' ? 'none' : 'flex';
+        document.getElementById('numQuestions').value = e.target.value === 'full' ? '' : '10';
+        document.getElementById('strand').value = 'all';
+    });
 
-        // Prompt Builder
-        function buildPrompt() {
-            const grade = document.getElementById('grade').value;
-            const type = document.getElementById('testType').value;
-            const strand = document.getElementById('strand').value;
-            const count = type === 'full' ? (grade === '9' ? 40 : 36) : parseInt(document.getElementById('numQuestions').value) || 10;
-            
-            const strandMap = {
-                'all': 'All strands (balanced mix matching official EQAO distribution)',
-                'number': 'Number Sense and Numeration / Number Sense and Algebra',
-                'measurement': 'Measurement',
-                'geometry': 'Geometry and Spatial Sense',
-                'algebra': 'Patterning and Algebra / Linear Relations',
-                'data': 'Data Management and Probability / Analytic Geometry'
-            };
+    // Prompt Builder
+    function buildPrompt() {
+        const grade = document.getElementById('grade').value;
+        const type = document.getElementById('testType').value;
+        const strand = document.getElementById('strand').value;
+        const count = type === 'full' ? (grade === '9' ? 40 : 36) : parseInt(document.getElementById('numQuestions').value) || 10;
+        
+        const strandMap = {
+            'all': 'All strands (balanced mix matching official EQAO distribution)',
+            'number': 'Number Sense and Numeration / Number Sense and Algebra',
+            'measurement': 'Measurement',
+            'geometry': 'Geometry and Spatial Sense',
+            'algebra': 'Patterning and Algebra / Linear Relations',
+            'data': 'Data Management and Probability / Analytic Geometry'
+        };
 
-            const instructions = type === 'full' 
-                ? `This is a full-length EQAO practice test. Include exactly ${count} questions. Mix question types: ~60% multiple choice, ~30% short answer, ~10% long answer. Ensure progressive difficulty matching official EQAO pacing.`
-                : `Generate exactly ${count} practice questions. Mix multiple choice (~70%) and short answer (~30%). Focus on real-world contexts.`;
+        const instructions = type === 'full' 
+            ? `This is a full-length EQAO practice test. Include exactly ${count} questions. Mix question types: ~60% multiple choice, ~30% short answer, ~10% long answer. Ensure progressive difficulty matching official EQAO pacing.`
+            : `Generate exactly ${count} practice questions. Mix multiple choice (~70%) and short answer (~30%). Focus on real-world contexts.`;
 
-            return `You are an expert Ontario EQAO math test creator. 
+        return `You are an expert Ontario EQAO math test creator. 
 ${instructions}
 Grade: ${grade}
 Focus: ${strandMap[strand]}
@@ -346,126 +345,147 @@ JSON Schema for each question:
   "options": ["A", "B", "C", "D"], (omit for shortAnswer)
   "answer": "correct option letter or short explanation"
 }`;
-        }
+    }
 
-        // Gemini Fetch & Parse
-        async function callGemini() {
-            const res = await fetch(`${MODEL_URL}?key=${GEMINI_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: buildPrompt() }] }],
-                    generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
-                })
-            });
+    // ✅ FIXED GEMINI API CALL
+    async function callGemini() {
+        const MODEL_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
+        
+        const res = await fetch(`${MODEL_URL}?key=${GEMINI_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: buildPrompt() }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 4000, topP: 0.95 }
+            })
+        });
 
-            if (!res.ok) throw new Error(`API Error ${res.status}. Check your key or try again later.`);
-            const data = await res.json();
-            
-            if (data.error) throw new Error(data.error.message);
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            
-            // Extract JSON from markdown if present
-            const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || text.match(/({[\s\S]*})/);
-            const cleanJson = jsonMatch ? jsonMatch[1] : text;
-            
-            const questions = JSON.parse(cleanJson);
-            if (!Array.isArray(questions) || questions.length === 0) throw new Error('Invalid response format. Please try again.');
-            return questions;
-        }
-
-        // Worksheet Renderer
-        function renderWorksheet(questions) {
-            const container = document.getElementById('previewContainer');
-            const grade = document.getElementById('grade').value;
-            const type = document.getElementById('testType').value;
-            const includeAns = document.getElementById('includeAnswers').checked;
-            const includeRub = document.getElementById('includeRubric').checked;
-            const title = type === 'full' ? 'FULL-LENGTH PRACTICE TEST' : 'PRACTICE WORKSHEET';
-            const count = questions.length;
-
-            let html = `<div class="worksheet">
-                <div class="worksheet-header">
-                    <h2>${title}</h2>
-                    <div style="font-size:12pt; margin-bottom:5px;">Grade ${grade} Mathematics • Ontario Curriculum</div>
-                    <div class="info">
-                        <div>Name: _________________________</div>
-                        <div>Date: _______________</div>
-                        <div>Score: _____ / ${count}</div>
-                    </div>
-                </div>
-                <div class="instructions">Read each question carefully. Show all work and calculations. Use proper mathematical notation. Diagrams are not drawn to scale unless specified.</div>`;
-
-            questions.forEach((q, i) => {
-                html += `<div class="question">
-                    <div class="q-header">
-                        <span class="q-number">Question ${i + 1}</span>
-                        <span class="q-strand">${q.strand || grade} Math</span>
-                    </div>
-                    <div class="q-text">${q.question}</div>`;
-                
-                if (q.type === 'multipleChoice' && q.options) {
-                    html += `<div class="mc-grid">`;
-                    q.options.forEach(opt => {
-                        html += `<div class="mc-option">${opt}</div>`;
-                    });
-                    html += `</div>`;
-                } else {
-                    html += `<div class="answer-space"></div>`;
-                }
-                html += `</div>`;
-            });
-
-            if (includeAns) {
-                html += `<div class="answer-key-compact">`;
-                questions.forEach((q, i) => {
-                    html += `<div class="ak-item"><strong>Q${i+1}:</strong> ${q.answer}</div>`;
-                });
-                html += `</div>`;
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            if (res.status === 404) {
+                throw new Error('API endpoint not found. Please ensure:\n1. Your API key is valid\n2. Gemini API is enabled in Google Cloud\n3. You\'re using model: gemini-1.5-flash');
             }
+            if (res.status === 403) {
+                throw new Error('API key not authorized. Enable "Gemini API" for your key in Google AI Studio.');
+            }
+            if (res.status === 429) {
+                throw new Error('Rate limit exceeded. Wait 60 seconds and try again.');
+            }
+            throw new Error(`API Error ${res.status}: ${errData.error?.message || 'Unknown error'}`);
+        }
 
-            if (includeRub) {
-                html += `<div class="rubric">
-                    <h3>Ontario Achievement Chart Rubric</h3>
-                    <table><tr><th>Criteria</th><th>Level 4 (80-100%)</th><th>Level 3 (70-79%)</th><th>Level 2 (60-69%)</th><th>Level 1 (50-59%)</th></tr>
-                    <tr><td><strong>Knowledge</strong></td><td>Thorough understanding</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
-                    <tr><td><strong>Thinking</strong></td><td>High effectiveness</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
-                    <tr><td><strong>Communication</strong></td><td>Clear & precise</td><td>Considerable clarity</td><td>Some clarity</td><td>Limited clarity</td></tr>
-                    <tr><td><strong>Application</strong></td><td>High degree</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
-                    </table></div>`;
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+        
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!text.trim()) throw new Error('Empty response from AI. Try again.');
+        
+        let cleanJson = text;
+        const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (codeBlock) cleanJson = codeBlock[1];
+        else {
+            const braceMatch = text.match(/{[\s\S]*}/);
+            if (braceMatch) cleanJson = braceMatch[0];
+        }
+        
+        try {
+            const questions = JSON.parse(cleanJson);
+            if (!Array.isArray(questions) || questions.length === 0) throw new Error('Invalid format returned.');
+            return questions;
+        } catch (e) {
+            console.error('Parse error:', e);
+            throw new Error('Could not parse AI response. Try fewer questions.');
+        }
+    }
+
+    // Worksheet Renderer
+    function renderWorksheet(questions) {
+        const container = document.getElementById('previewContainer');
+        const grade = document.getElementById('grade').value;
+        const type = document.getElementById('testType').value;
+        const includeAns = document.getElementById('includeAnswers').checked;
+        const includeRub = document.getElementById('includeRubric').checked;
+        const title = type === 'full' ? 'FULL-LENGTH PRACTICE TEST' : 'PRACTICE WORKSHEET';
+        const count = questions.length;
+
+        let html = `<div class="worksheet">
+            <div class="worksheet-header">
+                <h2>${title}</h2>
+                <div style="font-size:12pt; margin-bottom:5px;">Grade ${grade} Mathematics • Ontario Curriculum</div>
+                <div class="info">
+                    <div>Name: _________________________</div>
+                    <div>Date: _______________</div>
+                    <div>Score: _____ / ${count}</div>
+                </div>
+            </div>
+            <div class="instructions">Read each question carefully. Show all work and calculations. Use proper mathematical notation.</div>`;
+
+        questions.forEach((q, i) => {
+            html += `<div class="question">
+                <div class="q-header">
+                    <span class="q-number">Question ${i + 1}</span>
+                    <span class="q-strand">${q.strand || 'Math'}</span>
+                </div>
+                <div class="q-text">${q.question}</div>`;
+            
+            if (q.type === 'multipleChoice' && q.options) {
+                html += `<div class="mc-grid">`;
+                q.options.forEach(opt => html += `<div class="mc-option">${opt}</div>`);
+                html += `</div>`;
+            } else {
+                html += `<div class="answer-space"></div>`;
             }
             html += `</div>`;
-            container.innerHTML = html;
-            container.classList.add('active');
-            container.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Main Generator
-        async function generateWorksheet() {
-            if (!GEMINI_KEY) return showToast('Please lock your Gemini API key first.', 'error');
-            
-            setLoading(true, '🧠 Generating unique EQAO questions...');
-            try {
-                const questions = await callGemini();
-                renderWorksheet(questions);
-                showToast(`✅ Worksheet generated! ${questions.length} unique questions.`, 'success');
-            } catch (err) {
-                console.error(err);
-                showToast('⚠️ ' + err.message, 'error');
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        function downloadPDF() {
-            showToast('Opening print dialog. Select "Save as PDF".', 'info');
-            setTimeout(window.print, 200);
-        }
-
-        // Keyboard shortcut
-        document.addEventListener('keydown', e => {
-            if (e.ctrlKey && e.key === 'Enter') generateWorksheet();
         });
-    </script>
+
+        if (includeAns) {
+            html += `<div class="answer-key-compact">`;
+            questions.forEach((q, i) => html += `<div class="ak-item"><strong>Q${i+1}:</strong> ${q.answer}</div>`);
+            html += `</div>`;
+        }
+
+        if (includeRub) {
+            html += `<div class="rubric">
+                <h3>Ontario Achievement Chart Rubric</h3>
+                <table><tr><th>Criteria</th><th>Level 4</th><th>Level 3</th><th>Level 2</th><th>Level 1</th></tr>
+                <tr><td><strong>Knowledge</strong></td><td>Thorough</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
+                <tr><td><strong>Thinking</strong></td><td>High effectiveness</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
+                <tr><td><strong>Communication</strong></td><td>Clear & precise</td><td>Considerable clarity</td><td>Some clarity</td><td>Limited clarity</td></tr>
+                <tr><td><strong>Application</strong></td><td>High degree</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
+                </table></div>`;
+        }
+        html += `</div>`;
+        container.innerHTML = html;
+        container.classList.add('active');
+        container.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Main Generator
+    async function generateWorksheet() {
+        if (!GEMINI_KEY) return showToast('🔑 Please lock your Gemini API key first.', 'error');
+        
+        setLoading(true, '🤖 Generating unique EQAO questions...');
+        try {
+            const questions = await callGemini();
+            renderWorksheet(questions);
+            showToast(`✅ Success! ${questions.length} unique questions generated.`, 'success');
+        } catch (err) {
+            console.error(err);
+            showToast('⚠️ ' + err.message, 'error');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function downloadPDF() {
+        showToast('🖨️ Opening print dialog. Select "Save as PDF".', 'info');
+        setTimeout(window.print, 200);
+    }
+
+    // Keyboard shortcut
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'Enter') generateWorksheet();
+    });
+</script>
 </body>
 </html>
