@@ -45,7 +45,7 @@
                 setError(null);
                 
                 try {
-                    // Using the stable V1 endpoint and 'gemini-1.5-flash-latest' alias
+                    // Stable V1 endpoint
                     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
                     
                     const prompt = `Create 10 EQAO math questions for Grade ${grade} (Ontario Curriculum). Return valid JSON: { "questions": [ { "type": "mc", "strand": "Number", "text": "Question text?", "options": ["A", "B", "C", "D"], "answer": "B", "rubric": "Explanation" } ] }. Use "mc" for multiple choice and "open" for open response.`;
@@ -55,7 +55,10 @@
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             contents: [{ parts: [{ text: prompt }] }],
-                            generationConfig: { responseMimeType: "application/json" }
+                            generationConfig: { 
+                                // Fixed: v1 endpoint often expects snake_case for field names
+                                response_mime_type: "application/json" 
+                            }
                         })
                     });
 
