@@ -3,196 +3,908 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EQAO AI Generator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <meta name="description" content="Generate Ontario EQAO-aligned math worksheets for Grades 3, 6, and 9. Print-ready with answer keys and rubrics.">
+    <title>EQAO Worksheet Generator - Ontario Curriculum</title>
     <style>
-        @media print {
-            .no-print { display: none !important; }
-            .page-break { page-break-before: always; }
-            body { background: white !important; }
-            .sheet-container { box-shadow: none !important; border: none !important; padding: 0 !important; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.5;
+            color: #333;
         }
-        .grid-pattern { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .content { padding: 40px; }
+        .settings-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 0.95em;
+        }
+        .form-group select, .form-group input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .form-group select:focus, .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+        .form-group input:invalid { border-color: #dc3545; }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 20px; height: 20px; cursor: pointer;
+        }
+        .checkbox-group label {
+            cursor: pointer; margin: 0; font-size: 0.95em;
+        }
+        .button-group {
+            display: flex; gap: 15px; flex-wrap: wrap;
+        }
+        button {
+            padding: 15px 30px; font-size: 1.1em; font-weight: 600;
+            border: none; border-radius: 8px; cursor: pointer;
+            transition: all 0.3s; flex: 1; min-width: 200px;
+        }
+        button:disabled {
+            opacity: 0.6; cursor: not-allowed; transform: none !important;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268; transform: translateY(-2px);
+        }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover:not(:disabled) {
+            background: #218838; transform: translateY(-2px);
+        }
+        /* Worksheet Styles */
+        .worksheet {
+            background: white; max-width: 8.5in; margin: 0 auto;
+            padding: 0.75in; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            font-family: 'Times New Roman', serif; font-size: 11pt;
+        }
+        .worksheet-header {
+            text-align: center; border-bottom: 3px solid #000;
+            padding-bottom: 15px; margin-bottom: 25px;
+        }
+        .worksheet-header h2 { font-size: 24pt; margin-bottom: 5px; }
+        .worksheet-header .info {
+            display: flex; justify-content: space-between;
+            margin-top: 15px; font-size: 11pt;
+        }
+        .question { margin-bottom: 25px; page-break-inside: avoid; }
+        .question-number {
+            font-weight: bold; font-size: 12pt; margin-bottom: 10px;
+        }
+        .question-text { font-size: 11pt; line-height: 1.6; margin-bottom: 10px; }
+        .answer-space {
+            border: 1px solid #ccc; min-height: 80px;
+            margin-top: 10px; padding: 10px;
+        }
+        .multiple-choice { margin-left: 20px; }
+        .multiple-choice div { margin: 8px 0; font-size: 11pt; }
+        .answer-key {
+            background: #f0f8ff; padding: 20px;
+            border-radius: 8px; margin-top: 30px;
+        }
+        .answer-key h3 { color: #0066cc; margin-bottom: 15px; }
+        .rubric {
+            margin-top: 30px; border: 2px solid #333;
+            border-radius: 8px; overflow: hidden;
+        }
+        .rubric h3 {
+            background: #333; color: white; padding: 15px; margin: 0;
+        }
+        .rubric table { width: 100%; border-collapse: collapse; }
+        .rubric th, .rubric td {
+            border: 1px solid #ddd; padding: 12px; text-align: left;
+        }
+        .rubric th { background: #f5f5f5; font-weight: 600; }
+        .diagram-container {
+            margin: 15px 0; padding: 10px; text-align: center;
+        }
+        .diagram-container svg {
+            max-width: 100%; height: auto;
+            display: block; margin: 0 auto;
+        }
+        .diagram-container svg[role="img"] {
+            border: 1px solid #eee; border-radius: 4px;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; max-width: 100%; }
+            .header, .content > *:not(.preview-container),
+            .settings-panel, .button-group {
+                display: none !important;
+            }
+            .worksheet {
+                box-shadow: none; padding: 0.5in;
+                width: 100%; max-width: none;
+            }
+            .no-print { display: none !important; }
+            .diagram-container svg {
+                max-width: 100% !important; height: auto !important;
+            }
+        }
+        @media (max-width: 768px) {
+            .content { padding: 20px; }
+            .settings-grid { grid-template-columns: 1fr; }
+            .button-group { flex-direction: column; }
+            button { min-width: 100%; }
+        }
+        .preview-container { margin-top: 30px; display: none; }
+        .preview-container.active { display: block; }
+        .info-box {
+            background: #e7f3ff; border-left: 4px solid #2196F3;
+            padding: 15px; margin-bottom: 20px; border-radius: 4px;
+        }
+        .info-box h4 { margin-bottom: 10px; color: #1976D2; }
+        .strand-badge {
+            display: inline-block; background: #667eea; color: white;
+            padding: 5px 12px; border-radius: 15px;
+            font-size: 10pt; margin-bottom: 10px;
+        }
+        .loading {
+            display: inline-block; width: 20px; height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%; border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .sr-only {
+            position: absolute; width: 1px; height: 1px;
+            padding: 0; margin: -1px; overflow: hidden;
+            clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+        }
+        .error-message {
+            background: #ffe6e6; border-left: 4px solid #dc3545;
+            color: #721c24; padding: 12px 15px; margin: 15px 0;
+            border-radius: 4px; display: none;
+        }
+        .error-message.show { display: block; }
+        .success-message {
+            background: #d4edda; border-left: 4px solid #28a745;
+            color: #155724; padding: 12px 15px; margin: 15px 0;
+            border-radius: 4px; display: none;
+        }
+        .success-message.show { display: block; }
     </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-900">
-    <div id="root"></div>
+<body>
+    <div class="container" role="main">
+        <div class="header">
+            <h1>📚 EQAO Worksheet Generator</h1>
+            <p>Professional Assessment Tools for Ontario Curriculum - Grades 3, 6 & 9</p>
+        </div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        
-        // --- PASTE YOUR API KEY HERE ---
-        const apiKey = "AIzaSyDIx0iwJloKHZ1vxLPNWGYOiNwYBhBHH_o"; 
+        <div class="content">
+            <div class="info-box" role="note">
+                <h4>🎯 Features:</h4>
+                <ul>
+                    <li>Full-length EQAO practice tests matching actual test format</li>
+                    <li>Individual strand practice by curriculum expectation</li>
+                    <li>Accurate diagrams, graphs, and geometric figures</li>
+                    <li>Professional print-ready layout with answer keys and rubrics</li>
+                    <li>Accessible design with keyboard navigation support</li>
+                </ul>
+            </div>
 
-        const App = () => {
-            const [grade, setGrade] = useState(6);
-            const [questions, setQuestions] = useState([]);
-            const [isGenerating, setIsGenerating] = useState(false);
-            const [error, setError] = useState(null);
+            <div id="errorMessage" class="error-message" role="alert" aria-live="polite"></div>
+            <div id="successMessage" class="success-message" role="status" aria-live="polite"></div>
 
-            const generateTest = async () => {
-                if (!apiKey) {
-                    setError("API Key is missing. Please edit the code to include your Gemini API key.");
-                    return;
-                }
-
-                setIsGenerating(true);
-                setError(null);
+            <div class="settings-panel">
+                <h3 style="margin-bottom: 20px;">Worksheet Settings</h3>
                 
-                try {
-                    // Stable V1 endpoint
-                    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-                    
-                    const prompt = `Create 10 EQAO math questions for Grade ${grade} (Ontario Curriculum). Return valid JSON: { "questions": [ { "type": "mc", "strand": "Number", "text": "Question text?", "options": ["A", "B", "C", "D"], "answer": "B", "rubric": "Explanation" } ] }. Use "mc" for multiple choice and "open" for open response.`;
+                <div class="settings-grid">
+                    <div class="form-group">
+                        <label for="grade">Grade Level:</label>
+                        <select id="grade" aria-label="Select grade level">
+                            <option value="3">Grade 3 - Primary EQAO</option>
+                            <option value="6">Grade 6 - Junior EQAO</option>
+                            <option value="9">Grade 9 - Math Assessment</option>
+                        </select>
+                    </div>
 
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }],
-                            generationConfig: { 
-                                // Fixed: v1 endpoint often expects snake_case for field names
-                                response_mime_type: "application/json" 
-                            }
-                        })
-                    });
+                    <div class="form-group">
+                        <label for="testType">Test Type:</label>
+                        <select id="testType" aria-label="Select test type">
+                            <option value="custom">Custom Practice</option>
+                            <option value="full">Full-Length EQAO Test</option>
+                        </select>
+                    </div>
 
-                    const result = await response.json();
-                    
-                    if (!response.ok) {
-                        throw new Error(result.error?.message || "API connection failed");
-                    }
+                    <div class="form-group">
+                        <label for="subject">Subject:</label>
+                        <select id="subject" aria-label="Select subject" disabled>
+                            <option value="math">Mathematics</option>
+                        </select>
+                    </div>
 
-                    const rawText = result.candidates[0].content.parts[0].text;
-                    const data = JSON.parse(rawText);
-                    setQuestions(data.questions || []);
-                    
-                } catch (err) {
-                    setError(err.message);
-                } finally {
-                    setIsGenerating(false);
-                }
-            };
+                    <div class="form-group" id="strandGroup">
+                        <label for="strand">Strand/Topic:</label>
+                        <select id="strand" aria-label="Select curriculum strand">
+                            <option value="all">All Strands</option>
+                        </select>
+                    </div>
 
-            return (
-                <div className="min-h-screen pb-12">
-                    <nav className="no-print bg-white border-b border-slate-200 p-4 sticky top-0 z-50">
-                        <div className="max-w-6xl mx-auto flex items-center justify-between">
-                            <div className="flex flex-col text-left">
-                                <h1 className="font-black text-xl tracking-tight uppercase italic">EQAO AI Engine</h1>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                                    {apiKey ? "🟢 API Key Ready" : "🔴 Missing API Key"}
-                                </span>
-                            </div>
-                            <div className="flex space-x-3">
-                                <select 
-                                    value={grade} 
-                                    onChange={(e) => setGrade(e.target.value)}
-                                    className="bg-slate-100 rounded-lg px-3 py-2 text-xs font-bold outline-none border-2 border-transparent focus:border-blue-500"
-                                >
-                                    <option value="3">Grade 3</option>
-                                    <option value="6">Grade 6</option>
-                                    <option value="9">Grade 9</option>
-                                </select>
-                                <button 
-                                    onClick={generateTest}
-                                    disabled={isGenerating}
-                                    className="bg-blue-600 hover:bg-slate-900 text-white px-6 py-2 rounded-lg font-black text-xs uppercase transition disabled:opacity-50 flex items-center"
-                                >
-                                    {isGenerating && <div className="loader mr-2"></div>}
-                                    {isGenerating ? "Thinking..." : "Generate Test"}
-                                </button>
-                                <button onClick={() => window.print()} className="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-bold uppercase transition">Print</button>
-                            </div>
-                        </div>
-                    </nav>
+                    <div class="form-group" id="numQuestionsGroup">
+                        <label for="numQuestions">Number of Questions (5-50):</label>
+                        <input type="number" id="numQuestions" min="5" max="50" value="10" aria-label="Number of questions to generate">
+                    </div>
 
-                    <div className="max-w-4xl mx-auto p-6">
-                        {error && (
-                            <div className="bg-red-50 border-2 border-red-200 p-4 rounded-xl text-red-700 text-sm font-medium mb-6 text-left">
-                                <p className="font-black uppercase text-[10px] mb-1">System Error</p>
-                                {error}
-                            </div>
-                        )}
-
-                        <div className="sheet-container bg-white shadow-xl rounded-[2rem] border border-slate-200 p-12 min-h-[11in] text-left">
-                            <div className="border-b-4 border-slate-900 pb-4 mb-8 flex justify-between items-end">
-                                <div>
-                                    <h2 className="text-3xl font-black uppercase italic leading-tight">Mathematics</h2>
-                                    <p className="font-bold text-blue-600">EQAO Assessment • Grade {grade}</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="w-48 border-b-2 border-slate-300 h-8 mb-1"></div>
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase">Student Name</span>
-                                </div>
-                            </div>
-
-                            {questions.length === 0 && !isGenerating && (
-                                <div className="py-20 text-center">
-                                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Set your key and click generate to begin</p>
-                                </div>
-                            )}
-
-                            <div className="space-y-12">
-                                {questions.map((q, i) => (
-                                    <div key={i} className="break-inside-avoid">
-                                        <div className="flex space-x-4">
-                                            <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black shrink-0 mt-1">{i + 1}</div>
-                                            <div className="flex-1 space-y-4">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest italic">{q.strand}</span>
-                                                    <p className="text-lg font-bold leading-relaxed">{q.text}</p>
-                                                </div>
-                                                
-                                                {q.type === 'mc' ? (
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        {q.options.map((opt, oi) => (
-                                                            <div key={oi} className="flex items-center space-x-3 p-3 border border-slate-100 rounded-xl bg-slate-50">
-                                                                <div className="w-6 h-6 rounded-full border-2 border-slate-900 flex items-center justify-center font-black text-[10px] uppercase shrink-0">
-                                                                    {['a','b','c','d'][oi]}
-                                                                </div>
-                                                                <span className="text-sm font-bold text-slate-700">{opt}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="h-48 w-full bg-slate-50 border-2 border-slate-100 rounded-2xl grid-pattern"></div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {questions.length > 0 && (
-                            <div className="sheet-container bg-white shadow-xl rounded-[2rem] border border-slate-200 p-12 mt-8 page-break text-left">
-                                <h3 className="text-xl font-black uppercase italic mb-6 border-b-2 border-slate-900 pb-2">Teacher Scoring Key</h3>
-                                <div className="grid grid-cols-1 gap-6">
-                                    {questions.map((q, i) => (
-                                        <div key={i} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
-                                            <div className="flex justify-between items-center">
-                                                <span className="font-black text-xs text-blue-600 uppercase tracking-widest">Question {i+1} ({q.type})</span>
-                                                <span className="font-black text-slate-900 uppercase">Answer: {q.answer}</span>
-                                            </div>
-                                            <p className="text-xs text-slate-500 leading-relaxed italic">{q.rubric}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                    <div class="form-group">
+                        <label for="studentName">Student Name (optional):</label>
+                        <input type="text" id="studentName" placeholder="Leave blank for class set" aria-label="Student name for worksheet header">
                     </div>
                 </div>
-            );
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeAnswers" checked aria-label="Include answer key in worksheet">
+                    <label for="includeAnswers">Include Answer Key</label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeRubric" checked aria-label="Include assessment rubric">
+                    <label for="includeRubric">Include Ontario Achievement Rubric</label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeDiagrams" checked aria-label="Include visual diagrams in questions">
+                    <label for="includeDiagrams">Include Visual Diagrams</label>
+                </div>
+            </div>
+
+            <div class="button-group no-print">
+                <button class="btn-primary" id="generateBtn" onclick="generateWorksheet()" aria-label="Generate worksheet with selected settings">
+                    🎲 Generate Worksheet
+                </button>
+                <button class="btn-success" onclick="window.print()" aria-label="Print the generated worksheet">
+                    🖨️ Print Worksheet
+                </button>
+                <button class="btn-secondary" onclick="downloadPDF()" aria-label="Download worksheet as PDF">
+                    📄 Download PDF
+                </button>
+            </div>
+
+            <div id="previewContainer" class="preview-container" role="region" aria-label="Worksheet preview"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURATION =====
+        const CONFIG = {
+            minQuestions: 5,
+            maxQuestions: 50,
+            fullTestCounts: { '3': 36, '6': 36, '9': 40 },
+            defaultSubject: 'math'
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        // ===== CURRICULUM DATA =====
+        const mathStrands = {
+            3: [
+                { value: 'all', label: 'All Strands' },
+                { value: 'number_sense', label: 'Number Sense and Numeration' },
+                { value: 'measurement', label: 'Measurement' },
+                { value: 'geometry', label: 'Geometry and Spatial Sense' },
+                { value: 'patterning', label: 'Patterning and Algebra' },
+                { value: 'data', label: 'Data Management and Probability' }
+            ],
+            6: [
+                { value: 'all', label: 'All Strands' },
+                { value: 'number_sense', label: 'Number Sense and Numeration' },
+                { value: 'measurement', label: 'Measurement' },
+                { value: 'geometry', label: 'Geometry and Spatial Sense' },
+                { value: 'patterning', label: 'Patterning and Algebra' },
+                { value: 'data', label: 'Data Management and Probability' }
+            ],
+            9: [
+                { value: 'all', label: 'All Strands' },
+                { value: 'number_sense', label: 'Number Sense and Algebra' },
+                { value: 'linear_relations', label: 'Linear Relations' },
+                { value: 'measurement', label: 'Measurement and Geometry' },
+                { value: 'analytic_geometry', label: 'Analytic Geometry' }
+            ]
+        };
+
+        // ===== EXPANDED QUESTION BANKS (FIXED) =====
+        const questionBanks = {
+            math: {
+                3: {
+                    number_sense: [
+                        { type: 'multipleChoice', q: "What is 156 + 287?", options: ["333", "433", "443", "543"], answer: "C", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "Which number is the same as 5 hundreds, 3 tens, and 8 ones?", options: ["358", "538", "583", "835"], answer: "B", strand: "Number Sense and Numeration" },
+                        { type: 'shortAnswer', q: "Jake has 48 marbles. He gives 15 to his friend and then buys 22 more. How many marbles does Jake have now? Show your work.", answer: "55 marbles. Solution: 48 - 15 = 33, then 33 + 22 = 55", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "What is 7 × 8?", options: ["48", "54", "56", "64"], answer: "C", strand: "Number Sense and Numeration" },
+                        { type: 'shortAnswer', q: "Round 673 to the nearest hundred.", answer: "700", strand: "Number Sense and Numeration" },
+                        { type: 'diagram', q: "Look at the array shown below. Write a multiplication sentence to represent this array.", diagramType: 'array', diagramData: { rows: 4, cols: 6 }, answer: "4 × 6 = 24 or 6 × 4 = 24", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "What is 64 ÷ 8?", options: ["6", "7", "8", "9"], answer: "C", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "Which fraction is equivalent to 1/2?", options: ["2/3", "3/6", "1/4", "2/5"], answer: "B", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "What is 9 × 6?", options: ["48", "52", "54", "56"], answer: "C", strand: "Number Sense and Numeration" },
+                        { type: 'shortAnswer', q: "Write the number that is 100 more than 427.", answer: "527", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "Which shows 3/4 as a decimal?", options: ["0.25", "0.50", "0.75", "1.00"], answer: "C", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "What is 100 - 37?", options: ["63", "67", "73", "77"], answer: "A", strand: "Number Sense and Numeration" }
+                    ],
+                    measurement: [
+                        { type: 'multipleChoice', q: "How many centimeters are in 2 meters?", options: ["20 cm", "200 cm", "2000 cm", "20000 cm"], answer: "B", strand: "Measurement" },
+                        { type: 'diagram', q: "What is the perimeter of this rectangle?", diagramType: 'rectangle', diagramData: { length: 8, width: 5, unit: 'cm' }, options: ["13 cm", "18 cm", "26 cm", "40 cm"], answer: "C", strand: "Measurement" },
+                        { type: 'shortAnswer', q: "A pencil is 18 cm long. How many millimeters is that?", answer: "180 mm", strand: "Measurement" },
+                        { type: 'multipleChoice', q: "What time is it when the hour hand is on 7 and the minute hand is on 6?", options: ["6:30", "7:06", "7:30", "6:07"], answer: "C", strand: "Measurement" },
+                        { type: 'multipleChoice', q: "Which unit would you use to measure the length of a classroom?", options: ["centimeters", "meters", "kilometers", "millimeters"], answer: "B", strand: "Measurement" },
+                        { type: 'shortAnswer', q: "How many minutes are in 2 hours?", answer: "120 minutes", strand: "Measurement" }
+                    ],
+                    geometry: [
+                        { type: 'multipleChoice', q: "How many sides does a hexagon have?", options: ["4", "5", "6", "8"], answer: "C", strand: "Geometry and Spatial Sense" },
+                        { type: 'multipleChoice', q: "Which 3D shape has 6 faces, 12 edges, and 8 vertices?", options: ["Sphere", "Cube", "Cylinder", "Cone"], answer: "B", strand: "Geometry and Spatial Sense" },
+                        { type: 'diagram', q: "Which angle shown below is a right angle?", diagramType: 'angles', diagramData: { angles: [45, 90, 135, 180] }, options: ["A", "B", "C", "D"], answer: "B", strand: "Geometry and Spatial Sense" },
+                        { type: 'multipleChoice', q: "How many vertices does a triangle have?", options: ["2", "3", "4", "6"], answer: "B", strand: "Geometry and Spatial Sense" },
+                        { type: 'multipleChoice', q: "Which shape has all sides equal and 4 right angles?", options: ["Rectangle", "Square", "Rhombus", "Trapezoid"], answer: "B", strand: "Geometry and Spatial Sense" }
+                    ],
+                    patterning: [
+                        { type: 'multipleChoice', q: "What is the next number in the pattern: 3, 7, 11, 15, ___?", options: ["17", "19", "20", "21"], answer: "B", strand: "Patterning and Algebra" },
+                        { type: 'shortAnswer', q: "Complete the pattern: 2, 5, 8, 11, ___, ___, ___", answer: "14, 17, 20 (adding 3 each time)", strand: "Patterning and Algebra" },
+                        { type: 'multipleChoice', q: "What rule describes this pattern? 5, 10, 15, 20, 25", options: ["Add 3", "Add 5", "Multiply by 2", "Add 10"], answer: "B", strand: "Patterning and Algebra" },
+                        { type: 'multipleChoice', q: "What is the missing number? 12, __, 18, 21, 24", options: ["13", "14", "15", "16"], answer: "C", strand: "Patterning and Algebra" },
+                        { type: 'shortAnswer', q: "If a pattern starts at 5 and adds 4 each time, what is the 5th term?", answer: "21 (5, 9, 13, 17, 21)", strand: "Patterning and Algebra" }
+                    ],
+                    data: [
+                        { type: 'diagram', q: "The bar graph shows favorite fruits. How many more students chose apples than bananas?", diagramType: 'barGraph', diagramData: { categories: ['Apples', 'Bananas', 'Oranges', 'Grapes'], values: [12, 5, 8, 10] }, options: ["5", "7", "12", "17"], answer: "B", strand: "Data Management and Probability" },
+                        { type: 'multipleChoice', q: "If you flip a coin, what is the probability it will land on heads?", options: ["0", "1/4", "1/2", "1"], answer: "C", strand: "Data Management and Probability" },
+                        { type: 'multipleChoice', q: "A spinner has 4 equal sections colored red, blue, green, and yellow. What is the probability of landing on red?", options: ["1/2", "1/3", "1/4", "1/5"], answer: "C", strand: "Data Management and Probability" },
+                        { type: 'shortAnswer', q: "In a class of 20 students, 8 prefer soccer. What fraction of the class prefers soccer? Simplify your answer.", answer: "2/5 (8/20 simplifies to 2/5)", strand: "Data Management and Probability" }
+                    ]
+                },
+                6: {
+                    number_sense: [
+                        { type: 'multipleChoice', q: "What is 3/4 + 2/3?", options: ["5/7", "5/12", "17/12", "1 5/12"], answer: "D", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "What is 15% of 80?", options: ["10", "12", "15", "20"], answer: "B", strand: "Number Sense and Numeration" },
+                        { type: 'shortAnswer', q: "A jacket costs $65. It is on sale for 20% off. What is the sale price? Show all calculations.", answer: "$52. Solution: 20% of 65 = 13, so 65 - 13 = 52", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "Which shows these numbers in order from least to greatest: 0.7, 3/4, 0.65, 4/5?", options: ["0.65, 0.7, 3/4, 4/5", "3/4, 4/5, 0.65, 0.7", "4/5, 3/4, 0.7, 0.65", "0.7, 0.65, 4/5, 3/4"], answer: "A", strand: "Number Sense and Numeration" },
+                        { type: 'diagram', q: "What fraction of the circle is shaded?", diagramType: 'fractionCircle', diagramData: { total: 8, shaded: 3 }, options: ["1/3", "3/8", "3/5", "5/8"], answer: "B", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "What is -5 + 12?", options: ["-17", "-7", "7", "17"], answer: "C", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "What is 2.5 × 4?", options: ["8", "9", "10", "12"], answer: "C", strand: "Number Sense and Numeration" },
+                        { type: 'shortAnswer', q: "Convert 3/5 to a decimal.", answer: "0.6", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "Which is the greatest? 0.8, 4/5, 75%, 0.79", options: ["0.8", "4/5", "75%", "0.79"], answer: "B", strand: "Number Sense and Numeration" },
+                        { type: 'multipleChoice', q: "What is the value of 5²?", options: ["10", "15", "20", "25"], answer: "D", strand: "Number Sense and Numeration" }
+                    ],
+                    measurement: [
+                        { type: 'diagram', q: "What is the area of this triangle?", diagramType: 'triangle', diagramData: { base: 10, height: 6, unit: 'cm' }, options: ["16 cm²", "30 cm²", "60 cm²", "120 cm²"], answer: "B", strand: "Measurement" },
+                        { type: 'multipleChoice', q: "A rectangular prism has length 5 cm, width 3 cm, and height 4 cm. What is its volume?", options: ["12 cm³", "20 cm³", "60 cm³", "120 cm³"], answer: "C", strand: "Measurement" },
+                        { type: 'shortAnswer', q: "The perimeter of a square is 36 cm. What is the length of one side?", answer: "9 cm (36 ÷ 4 = 9)", strand: "Measurement" },
+                        { type: 'multipleChoice', q: "How many milliliters are in 2.5 liters?", options: ["250 mL", "2500 mL", "25000 mL", "25 mL"], answer: "B", strand: "Measurement" },
+                        { type: 'multipleChoice', q: "What is the circumference of a circle with diameter 10 cm? (Use π ≈ 3.14)", options: ["15.7 cm", "31.4 cm", "62.8 cm", "78.5 cm"], answer: "B", strand: "Measurement" }
+                    ],
+                    geometry: [
+                        { type: 'diagram', q: "What type of angle is shown?", diagramType: 'angle', diagramData: { degrees: 110 }, options: ["Acute", "Right", "Obtuse", "Straight"], answer: "C", strand: "Geometry and Spatial Sense" },
+                        { type: 'multipleChoice', q: "How many lines of symmetry does a rectangle have?", options: ["0", "1", "2", "4"], answer: "C", strand: "Geometry and Spatial Sense" },
+                        { type: 'multipleChoice', q: "What is the sum of interior angles in a triangle?", options: ["90°", "180°", "270°", "360°"], answer: "B", strand: "Geometry and Spatial Sense" },
+                        { type: 'multipleChoice', q: "Which shape has exactly one pair of parallel sides?", options: ["Rectangle", "Parallelogram", "Trapezoid", "Rhombus"], answer: "C", strand: "Geometry and Spatial Sense" }
+                    ],
+                    patterning: [
+                        { type: 'multipleChoice', q: "Solve for x: 3x + 7 = 22", options: ["x = 3", "x = 5", "x = 7", "x = 15"], answer: "B", strand: "Patterning and Algebra" },
+                        { type: 'shortAnswer', q: "If the pattern continues, what will be the 10th term? 5, 8, 11, 14, ...", answer: "32 (pattern adds 3 each time; 10th term = 5 + 9×3 = 32)", strand: "Patterning and Algebra" },
+                        { type: 'multipleChoice', q: "What is the value of 2n + 3 when n = 4?", options: ["8", "9", "10", "11"], answer: "D", strand: "Patterning and Algebra" },
+                        { type: 'shortAnswer', q: "Write an expression for: 5 more than twice a number x.", answer: "2x + 5", strand: "Patterning and Algebra" }
+                    ],
+                    data: [
+                        { type: 'diagram', q: "What is the mean (average) of the data shown in this bar graph?", diagramType: 'barGraph', diagramData: { categories: ['Week 1', 'Week 2', 'Week 3', 'Week 4'], values: [12, 15, 9, 16] }, options: ["12", "13", "14", "15"], answer: "B", strand: "Data Management and Probability" },
+                        { type: 'multipleChoice', q: "What is the median of this data set: 3, 7, 5, 9, 5, 11?", options: ["5", "6", "7", "8"], answer: "B", strand: "Data Management and Probability" },
+                        { type: 'multipleChoice', q: "What is the mode of: 2, 4, 4, 6, 8, 4, 10?", options: ["2", "4", "6", "8"], answer: "B", strand: "Data Management and Probability" },
+                        { type: 'shortAnswer', q: "A bag has 3 red, 5 blue, and 2 green marbles. What is the probability of drawing a blue marble?", answer: "5/10 or 1/2 or 50%", strand: "Data Management and Probability" }
+                    ]
+                },
+                9: {
+                    number_sense: [
+                        { type: 'multipleChoice', q: "Simplify: 3x² + 5x - 2x² + 7x", options: ["x² + 12x", "5x² + 12x", "x² + 2x", "5x² + 2x"], answer: "A", strand: "Number Sense and Algebra" },
+                        { type: 'multipleChoice', q: "Factor: x² + 9x + 20", options: ["(x + 4)(x + 5)", "(x + 2)(x + 10)", "(x - 4)(x - 5)", "(x + 1)(x + 20)"], answer: "A", strand: "Number Sense and Algebra" },
+                        { type: 'shortAnswer', q: "Expand and simplify: 3(2x - 5) + 4(x + 3)", answer: "10x - 3", strand: "Number Sense and Algebra" },
+                        { type: 'multipleChoice', q: "Simplify: (4a²b)(3ab³)", options: ["7a³b⁴", "12a³b⁴", "12a²b³", "7a²b⁴"], answer: "B", strand: "Number Sense and Algebra" },
+                        { type: 'multipleChoice', q: "What is the value of 2⁻³?", options: ["-6", "-8", "1/8", "1/6"], answer: "C", strand: "Number Sense and Algebra" },
+                        { type: 'shortAnswer', q: "Evaluate: √144", answer: "12", strand: "Number Sense and Algebra" },
+                        { type: 'multipleChoice', q: "Which is equivalent to (x³)²?", options: ["x⁵", "x⁶", "2x³", "x⁹"], answer: "B", strand: "Number Sense and Algebra" }
+                    ],
+                    linear_relations: [
+                        { type: 'diagram', q: "What is the slope of this line?", diagramType: 'lineGraph', diagramData: { points: [[0, 2], [2, 6], [4, 10]], showGrid: true }, options: ["1/2", "2", "3", "4"], answer: "B", strand: "Linear Relations" },
+                        { type: 'multipleChoice', q: "What is the y-intercept of y = -3x + 7?", options: ["-3", "3", "7", "-7"], answer: "C", strand: "Linear Relations" },
+                        { type: 'shortAnswer', q: "Find the equation of a line with slope 4 that passes through point (2, 5).", answer: "y = 4x - 3", strand: "Linear Relations" },
+                        { type: 'multipleChoice', q: "Which line is parallel to y = 2x + 5?", options: ["y = 2x - 3", "y = -2x + 5", "y = 1/2x + 5", "y = 3x + 5"], answer: "A", strand: "Linear Relations" },
+                        { type: 'multipleChoice', q: "What is the slope of a line passing through (1, 3) and (4, 9)?", options: ["1", "2", "3", "6"], answer: "B", strand: "Linear Relations" },
+                        { type: 'shortAnswer', q: "Write the equation in slope-intercept form: 2y - 4x = 8", answer: "y = 2x + 4", strand: "Linear Relations" }
+                    ],
+                    measurement: [
+                        { type: 'diagram', q: "Find the length of the hypotenuse using the Pythagorean theorem.", diagramType: 'rightTriangle', diagramData: { a: 6, b: 8, unit: 'cm' }, options: ["7 cm", "10 cm", "14 cm", "100 cm"], answer: "B", strand: "Measurement and Geometry" },
+                        { type: 'multipleChoice', q: "What is the surface area of a cube with side length 5 cm?", options: ["25 cm²", "50 cm²", "125 cm²", "150 cm²"], answer: "D", strand: "Measurement and Geometry" },
+                        { type: 'multipleChoice', q: "What is the volume of a cylinder with radius 3 cm and height 10 cm? (Use π ≈ 3.14)", options: ["94.2 cm³", "188.4 cm³", "282.6 cm³", "376.8 cm³"], answer: "C", strand: "Measurement and Geometry" },
+                        { type: 'shortAnswer', q: "A circle has radius 7 cm. What is its area? (Use π ≈ 22/7)", answer: "154 cm²", strand: "Measurement and Geometry" }
+                    ],
+                    analytic_geometry: [
+                        { type: 'diagram', q: "Find the distance between points A(-2, 3) and B(4, -5).", diagramType: 'coordinatePlane', diagramData: { points: [[-2, 3, 'A'], [4, -5, 'B']], showGrid: true }, options: ["6 units", "8 units", "10 units", "12 units"], answer: "C", strand: "Analytic Geometry" },
+                        { type: 'shortAnswer', q: "What is the midpoint of the line segment with endpoints (2, 7) and (8, -3)?", answer: "(5, 2)", strand: "Analytic Geometry" },
+                        { type: 'multipleChoice', q: "What is the slope of a line perpendicular to y = 3x - 2?", options: ["-3", "-1/3", "1/3", "3"], answer: "B", strand: "Analytic Geometry" },
+                        { type: 'multipleChoice', q: "Which point lies on the line y = 2x + 1?", options: ["(0, 0)", "(1, 2)", "(2, 5)", "(3, 6)"], answer: "C", strand: "Analytic Geometry" }
+                    ]
+                }
+            }
+        };
+
+        // ===== SVG DIAGRAM GENERATORS =====
+        function createArrayDiagram(rows, cols) {
+            const cellSize = 25;
+            const width = cols * cellSize + 40;
+            const height = rows * cellSize + 40;
+            let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Array diagram with ${rows} rows and ${cols} columns">`;
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    svg += `<circle cx="${j * cellSize + 30}" cy="${i * cellSize + 30}" r="10" fill="#4CAF50" stroke="#333" stroke-width="1"/>`;
+                }
+            }
+            svg += '</svg>';
+            return svg;
+        }
+
+        function createRectangleDiagram(length, width, unit) {
+            const scale = 20;
+            const svgWidth = length * scale + 100;
+            const svgHeight = width * scale + 100;
+            let svg = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rectangle with length ${length} ${unit} and width ${width} ${unit}">`;
+            svg += `<rect x="40" y="40" width="${length * scale}" height="${width * scale}" fill="none" stroke="#333" stroke-width="2"/>`;
+            svg += `<text x="${40 + length * scale / 2}" y="30" text-anchor="middle" font-size="14">${length} ${unit}</text>`;
+            svg += `<text x="25" y="${40 + width * scale / 2}" text-anchor="middle" font-size="14" transform="rotate(-90, 25, ${40 + width * scale / 2})">${width} ${unit}</text>`;
+            svg += '</svg>';
+            return svg;
+        }
+
+        function createTriangleDiagram(base, height, unit) {
+            const scale = 20;
+            const svgWidth = base * scale + 100;
+            const svgHeight = height * scale + 100;
+            let svg = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Triangle with base ${base} ${unit} and height ${height} ${unit}">`;
+            const x1 = 50, y1 = svgHeight - 40;
+            const x2 = x1 + base * scale, y2 = y1;
+            const x3 = x1, y3 = y1 - height * scale;
+            svg += `<polygon points="${x1},${y1} ${x2},${y2} ${x3},${y3}" fill="lightblue" stroke="#333" stroke-width="2"/>`;
+            svg += `<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y3}" stroke="#f00" stroke-width="1" stroke-dasharray="5,5"/>`;
+            svg += `<text x="${x1 + base * scale / 2}" y="${y1 + 20}" text-anchor="middle" font-size="14">${base} ${unit}</text>`;
+            svg += `<text x="${x1 - 30}" y="${y1 - height * scale / 2}" text-anchor="middle" font-size="14">${height} ${unit}</text>`;
+            svg += '</svg>';
+            return svg;
+        }
+
+        function createBarGraph(categories, values) {
+            const barWidth = 60;
+            const maxValue = Math.max(...values);
+            const scale = 200 / maxValue;
+            const svgWidth = categories.length * (barWidth + 20) + 100;
+            const svgHeight = 320;
+            let svg = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar graph showing ${categories.join(', ')}">`;
+            svg += `<line x1="50" y1="250" x2="${svgWidth - 20}" y2="250" stroke="#000" stroke-width="2"/>`;
+            svg += `<line x1="50" y1="40" x2="50" y2="250" stroke="#000" stroke-width="2"/>`;
+            for (let i = 0; i < categories.length; i++) {
+                const x = 70 + i * (barWidth + 20);
+                const barHeight = values[i] * scale;
+                const y = 250 - barHeight;
+                svg += `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="#2196F3" stroke="#333" stroke-width="1"/>`;
+                svg += `<text x="${x + barWidth / 2}" y="${y - 5}" text-anchor="middle" font-size="12">${values[i]}</text>`;
+                svg += `<text x="${x + barWidth / 2}" y="270" text-anchor="middle" font-size="11">${categories[i]}</text>`;
+            }
+            svg += '</svg>';
+            return svg;
+        }
+
+        function createAngleDiagram(degrees) {
+            const svgWidth = 200, svgHeight = 150;
+            const centerX = 50, centerY = 100, radius = 60;
+            const angleRad = (degrees * Math.PI) / 180;
+            const endX = centerX + radius * Math.cos(angleRad);
+            const endY = centerY - radius * Math.sin(angleRad);
+            let svg = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Angle measuring ${degrees} degrees">`;
+            svg += `<line x1="${centerX}" y1="${centerY}" x2="${centerX + radius}" y2="${centerY}" stroke="#000" stroke-width="2"/>`;
+            svg += `<line x1="${centerX}" y1="${centerY}" x2="${endX}" y2="${endY}" stroke="#000" stroke-width="2"/>`;
+            const largeArcFlag = degrees > 180 ? 1 : 0;
+            svg += `<path d="M ${centerX + 30} ${centerY} A 30 30 0 ${largeArcFlag} 0 ${centerX + 30 * Math.cos(angleRad)} ${centerY - 30 * Math.sin(angleRad)}" fill="none" stroke="#f00" stroke-width="2"/>`;
+            svg += `<text x="${centerX + 40}" y="${centerY - 10}" font-size="14">${degrees}°</text>`;
+            svg += '</svg>';
+            return svg;
+        }
+
+        function createAnglesDiagram(angles) {
+            const svgWidth = 400, svgHeight = 150, spacing = 100;
+            let svg = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Multiple angles for comparison">`;
+            for (let i = 0; i < angles.length; i++) {
+                const centerX = 50 + i * spacing, centerY = 80, radius = 40;
+                const degrees = angles[i];
+                const angleRad = (degrees * Math.PI) / 180;
+                const endX = centerX + radius * Math.cos(angleRad);
+                const endY = centerY - radius * Math.sin(angleRad);
+                svg += `<line x1="${centerX}" y1="${centerY}" x2="${centerX + radius}" y2="${centerY}" stroke="#000" stroke-width="2"/>`;
+                svg += `<line x1="${centerX}" y1="${centerY}" x2="${endX}" y2="${endY}" stroke="#000" stroke-width="2"/>`;
+                svg += `<text x="${centerX}" y="${centerY + 40}" text-anchor="middle" font-size="14" font-weight="bold">${String.fromCharCode(65 + i)}</text>`;
+            }
+            svg += '</svg>';
+            return svg;
+        }
+
+        function createFractionCircle(total, shaded) {
+            const svgSize = 200;
+            const centerX = svgSize / 2, centerY = svgSize / 2, radius = 70;
+            let svg = `<svg viewBox="0 0 ${svgSize} ${svgSize}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Circle divided into ${total} parts with ${shaded} shaded">`;
+            const anglePerSection = 360 / total;
+            for (let i = 0; i < total; i++) {
+                const startAngle = (i * anglePerSection - 90) * Math.PI / 180;
+                const endAngle = ((i + 1) * anglePerSection - 90) * Math.PI / 180;
+                const x1 = centerX + radius * Math.cos(startAngle);
+                const y1 = centerY + radius * Math.sin(startAngle);
+                const x2 = centerX + radius * Math.cos(endAngle);
+                const y2 = centerY + radius * Math.sin(endAngle);
+                const largeArcFlag = anglePerSection > 180 ? 1 : 0;
+                const fill = i < shaded ? '#4CAF50' : '#fff';
+                svg += `<path d="M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z" fill="${fill}" stroke="#000" stroke-width="2"/>`;
+            }
+            svg += '</svg>';
+            return svg;
+        }
+
+        function createLineGraph(points, showGrid) {
+            const svgWidth = 400, svgHeight = 300, padding = 50, scale = 30;
+            let svg = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line graph with points ${points.map(p => `(${p[0]},${p[1]})`).join(', ')}">`;
+            if (showGrid) {
+                for (let i = 0; i <= 10; i++) {
+                    svg += `<line x1="${padding}" y1="${svgHeight - padding - i * scale}" x2="${svgWidth - padding}" y2="${svgHeight - padding - i * scale}" stroke="#ddd" stroke-width="1"/>`;
+                    svg += `<line x1="${padding + i * scale}" y1="${padding}" x2="${padding + i * scale}" y2="${svgHeight - padding}" stroke="#ddd" stroke-width="1"/>`;
+                }
+            }
+            svg += `<line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}" stroke="#000" stroke-width="2"/>`;
+            svg += `<line x1="${padding}" y1="${padding}" x2="${padding}" y2="${svgHeight - padding}" stroke="#000" stroke-width="2"/>`;
+            let pathData = 'M';
+            for (let i = 0; i < points.length; i++) {
+                const x = padding + points[i][0] * scale;
+                const y = svgHeight - padding - points[i][1] * scale;
+                pathData += (i === 0 ? ' ' : ' L ') + x + ' ' + y;
+                svg += `<circle cx="${x}" cy="${y}" r="4" fill="#2196F3"/>`;
+                svg += `<text x="${x}" y="${y - 10}" text-anchor="middle" font-size="12">(${points[i][0]}, ${points[i][1]})</text>`;
+            }
+            svg += `<path d="${pathData}" fill="none" stroke="#2196F3" stroke-width="2"/>`;
+            svg += `<text x="${svgWidth / 2}" y="${svgHeight - 10}" text-anchor="middle" font-size="14">x</text>`;
+            svg += `<text x="20" y="${svgHeight / 2}" text-anchor="middle" font-size="14">y</text>`;
+            svg += '</svg>';
+            return svg;
+        }
+
+        function createRightTriangle(a, b, unit) {
+            const scale = 20;
+            const svgWidth = (a + 2) * scale + 100;
+            const svgHeight = (b + 2) * scale + 100;
+            let svg = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Right triangle with legs ${a} ${unit} and ${b} ${unit}">`;
+            const x1 = 50, y1 = svgHeight - 50;
+            const x2 = x1 + a * scale, y2 = y1;
+            const x3 = x1, y3 = y1 - b * scale;
+            svg += `<polygon points="${x1},${y1} ${x2},${y2} ${x3},${y3}" fill="lightblue" stroke="#333" stroke-width="2"/>`;
+            const markerSize = 15;
+            svg += `<line x1="${x1}" y1="${y1 - markerSize}" x2="${x1 + markerSize}" y2="${y1 - markerSize}" stroke="#000" stroke-width="1"/>`;
+            svg += `<line x1="${x1 + markerSize}" y1="${y1 - markerSize}" x2="${x1 + markerSize}" y2="${y1}" stroke="#000" stroke-width="1"/>`;
+            svg += `<text x="${x1 + a * scale / 2}" y="${y1 + 25}" text-anchor="middle" font-size="14">${a} ${unit}</text>`;
+            svg += `<text x="${x1 - 25}" y="${y1 - b * scale / 2}" text-anchor="middle" font-size="14">${b} ${unit}</text>`;
+            svg += `<text x="${x1 + a * scale / 2}" y="${y3 + (y1 - y3) / 2 - 10}" text-anchor="middle" font-size="14">c = ?</text>`;
+            svg += '</svg>';
+            return svg;
+        }
+
+        function createCoordinatePlane(pointsData, showGrid) {
+            const svgWidth = 400, svgHeight = 400;
+            const centerX = svgWidth / 2, centerY = svgHeight / 2, scale = 30;
+            let svg = `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Coordinate plane with points ${pointsData.map(p => p[2]).join(', ')}">`;
+            if (showGrid) {
+                for (let i = -6; i <= 6; i++) {
+                    svg += `<line x1="20" y1="${centerY + i * scale}" x2="${svgWidth - 20}" y2="${centerY + i * scale}" stroke="#ddd" stroke-width="1"/>`;
+                    svg += `<line x1="${centerX + i * scale}" y1="20" x2="${centerX + i * scale}" y2="${svgHeight - 20}" stroke="#ddd" stroke-width="1"/>`;
+                }
+            }
+            svg += `<line x1="20" y1="${centerY}" x2="${svgWidth - 20}" y2="${centerY}" stroke="#000" stroke-width="2"/>`;
+            svg += `<line x1="${centerX}" y1="20" x2="${centerX}" y2="${svgHeight - 20}" stroke="#000" stroke-width="2"/>`;
+            for (let i = 0; i < pointsData.length; i++) {
+                const x = centerX + pointsData[i][0] * scale;
+                const y = centerY - pointsData[i][1] * scale;
+                svg += `<circle cx="${x}" cy="${y}" r="5" fill="#f00"/>`;
+                svg += `<text x="${x + 15}" y="${y - 10}" font-size="14" font-weight="bold">${pointsData[i][2]}</text>`;
+                svg += `<text x="${x}" y="${y + 20}" text-anchor="middle" font-size="11">(${pointsData[i][0]}, ${pointsData[i][1]})</text>`;
+            }
+            if (pointsData.length === 2) {
+                const x1 = centerX + pointsData[0][0] * scale, y1 = centerY - pointsData[0][1] * scale;
+                const x2 = centerX + pointsData[1][0] * scale, y2 = centerY - pointsData[1][1] * scale;
+                svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#00f" stroke-width="2" stroke-dasharray="5,5"/>`;
+            }
+            svg += '</svg>';
+            return svg;
+        }
+
+        function generateDiagram(question) {
+            if (!question.diagramType) return '';
+            let svg = '';
+            try {
+                const diagrams = {
+                    array: () => createArrayDiagram(question.diagramData.rows, question.diagramData.cols),
+                    rectangle: () => createRectangleDiagram(question.diagramData.length, question.diagramData.width, question.diagramData.unit),
+                    triangle: () => createTriangleDiagram(question.diagramData.base, question.diagramData.height, question.diagramData.unit),
+                    barGraph: () => createBarGraph(question.diagramData.categories, question.diagramData.values),
+                    angle: () => createAngleDiagram(question.diagramData.degrees),
+                    angles: () => createAnglesDiagram(question.diagramData.angles),
+                    fractionCircle: () => createFractionCircle(question.diagramData.total, question.diagramData.shaded),
+                    lineGraph: () => createLineGraph(question.diagramData.points, question.diagramData.showGrid),
+                    rightTriangle: () => createRightTriangle(question.diagramData.a, question.diagramData.b, question.diagramData.unit),
+                    coordinatePlane: () => createCoordinatePlane(question.diagramData.points, question.diagramData.showGrid)
+                };
+                if (diagrams[question.diagramType]) {
+                    svg = diagrams[question.diagramType]();
+                }
+            } catch (e) {
+                console.error('Error generating diagram:', e);
+                return '<div class="diagram-container"><em>[Diagram unavailable]</em></div>';
+            }
+            return '<div class="diagram-container">' + svg + '</div>';
+        }
+
+        // ===== UI HELPERS =====
+        function updateStrands() {
+            const grade = document.getElementById('grade').value;
+            const strandSelect = document.getElementById('strand');
+            const strands = mathStrands[grade];
+            strandSelect.innerHTML = '';
+            strands.forEach(strand => {
+                const option = document.createElement('option');
+                option.value = strand.value;
+                option.textContent = strand.label;
+                strandSelect.appendChild(option);
+            });
+        }
+
+        function updateTestOptions() {
+            const testType = document.getElementById('testType').value;
+            const numQuestionsGroup = document.getElementById('numQuestionsGroup');
+            const strandGroup = document.getElementById('strandGroup');
+            if (testType === 'full') {
+                numQuestionsGroup.style.display = 'none';
+                strandGroup.style.display = 'none';
+                document.getElementById('strand').value = 'all';
+            } else {
+                numQuestionsGroup.style.display = 'flex';
+                strandGroup.style.display = 'flex';
+            }
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 5000);
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('successMessage');
+            el.textContent = msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        function validateInputs() {
+            const numQuestions = parseInt(document.getElementById('numQuestions').value);
+            if (isNaN(numQuestions) || numQuestions < CONFIG.minQuestions || numQuestions > CONFIG.maxQuestions) {
+                showError(`Please enter a number between ${CONFIG.minQuestions} and ${CONFIG.maxQuestions}.`);
+                return false;
+            }
+            return true;
+        }
+
+        function getStrandLabel(grade, strandValue) {
+            const strands = mathStrands[grade];
+            const found = strands.find(s => s.value === strandValue);
+            return found ? found.label : '';
+        }
+
+        function generateQuestions(subject, grade, count, strand, testType) {
+            const questions = [];
+            if (subject === 'math') {
+                const bank = questionBanks.math[grade];
+                if (!bank) return [];
+                let availableQuestions = [];
+                if (strand === 'all') {
+                    Object.values(bank).forEach(arr => availableQuestions.push(...arr));
+                } else if (bank[strand]) {
+                    availableQuestions = [...bank[strand]];
+                }
+                if (availableQuestions.length === 0) {
+                    showError('No questions available for this grade/strand combination.');
+                    return [];
+                }
+                const shuffled = availableQuestions.sort(() => 0.5 - Math.random());
+                const selected = shuffled.slice(0, Math.min(count, shuffled.length));
+                while (selected.length < count) {
+                    selected.push(shuffled[selected.length % shuffled.length]);
+                }
+                return selected.map(q => ({...q}));
+            }
+            return questions;
+        }
+
+        function generateRubric(subject, grade) {
+            return `<div class="rubric" style="page-break-before: always;">
+                <h3>📊 Assessment Rubric - Ontario Curriculum Achievement Chart</h3>
+                <table><thead><tr><th>Criteria</th><th>Level 4 (80-100%)</th><th>Level 3 (70-79%)</th><th>Level 2 (60-69%)</th><th>Level 1 (50-59%)</th></tr></thead><tbody>
+                <tr><td><strong>Knowledge & Understanding</strong></td><td>Thorough understanding of concepts and procedures</td><td>Considerable understanding of concepts</td><td>Some understanding of concepts</td><td>Limited understanding of concepts</td></tr>
+                <tr><td><strong>Thinking & Inquiry</strong></td><td>Applies problem-solving strategies with high effectiveness</td><td>Applies strategies with considerable effectiveness</td><td>Applies strategies with some effectiveness</td><td>Applies strategies with limited effectiveness</td></tr>
+                <tr><td><strong>Communication</strong></td><td>Expresses mathematical thinking clearly and precisely</td><td>Expresses thinking with considerable clarity</td><td>Expresses thinking with some clarity</td><td>Expresses thinking with limited clarity</td></tr>
+                <tr><td><strong>Application</strong></td><td>Applies knowledge with high degree of effectiveness</td><td>Applies knowledge with considerable effectiveness</td><td>Applies knowledge with some effectiveness</td><td>Applies knowledge with limited effectiveness</td></tr>
+                </tbody></table></div>`;
+        }
+
+        // ===== MAIN GENERATOR =====
+        function generateWorksheet() {
+            if (!validateInputs()) return;
+            
+            const btn = document.getElementById('generateBtn');
+            const originalBtnText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span>Generating...';
+
+            setTimeout(() => {
+                try {
+                    const grade = document.getElementById('grade').value;
+                    const subject = document.getElementById('subject').value;
+                    const testType = document.getElementById('testType').value;
+                    const strand = document.getElementById('strand').value;
+                    const numQuestions = testType === 'full' ? CONFIG.fullTestCounts[grade] : parseInt(document.getElementById('numQuestions').value);
+                    const studentName = document.getElementById('studentName').value.trim();
+                    const includeAnswers = document.getElementById('includeAnswers').checked;
+                    const includeRubric = document.getElementById('includeRubric').checked;
+                    const includeDiagrams = document.getElementById('includeDiagrams').checked;
+
+                    const container = document.getElementById('previewContainer');
+                    container.className = 'preview-container active';
+                    
+                    let html = '<div class="worksheet">';
+                    const testTitle = testType === 'full' ? 'FULL-LENGTH PRACTICE TEST' : 'PRACTICE WORKSHEET';
+                    html += `<div class="worksheet-header">
+                        <h2>${testTitle}</h2>
+                        <p style="font-size: 14pt;">Grade ${grade} Mathematics - Ontario Curriculum</p>`;
+                    if (strand !== 'all') {
+                        html += `<p style="font-size: 11pt; margin-top: 5px;">Focus: ${getStrandLabel(grade, strand)}</p>`;
+                    }
+                    html += `<div class="info">
+                        <div>Name: ${studentName || '_____________________________________'}</div>
+                        <div>Date: _________________</div>
+                        <div>Score: _____ / ${numQuestions}</div>
+                    </div></div>`;
+
+                    html += `<div style="margin-bottom: 20px; padding: 10px; background: #f9f9f9; border-left: 4px solid #333;">
+                        <strong>Instructions:</strong> ${testType === 'full' ? 'This is a full-length practice test. Work carefully and show all your work. ' : ''}Read each question carefully. Show all your work and calculations. Use proper mathematical notation.
+                    </div>`;
+
+                    const questions = generateQuestions(subject, grade, numQuestions, strand, testType);
+                    if (questions.length === 0) {
+                        throw new Error('Could not generate questions. Please try different settings.');
+                    }
+                    const answers = [];
+
+                    questions.forEach((q, i) => {
+                        html += '<div class="question">';
+                        if (q.strand) html += `<span class="strand-badge">${q.strand}</span>`;
+                        html += `<div class="question-number">Question ${i + 1}</div>`;
+                        if (includeDiagrams && q.diagramType) html += generateDiagram(q);
+                        
+                        if (q.type === 'multipleChoice' || q.type === 'diagram') {
+                            html += `<div class="question-text">${q.q}</div><div class="multiple-choice">`;
+                            q.options.forEach((opt, j) => {
+                                html += `<div>&#9675; ${String.fromCharCode(65 + j)}) ${opt}</div>`;
+                            });
+                            html += '</div>';
+                            answers.push(`${i + 1}. ${q.answer}`);
+                        } else if (q.type === 'shortAnswer') {
+                            html += `<div class="question-text">${q.q}</div><div class="answer-space"></div>`;
+                            answers.push(`${i + 1}. ${q.answer}`);
+                        }
+                        html += '</div>';
+                    });
+
+                    if (includeAnswers) {
+                        html += `<div class="answer-key" style="page-break-before: always;">
+                            <h3>📝 Answer Key</h3>
+                            <div style="font-size: 11pt; line-height: 1.8;">`;
+                        answers.forEach(a => html += `<div>${a}</div>`);
+                        html += '</div></div>';
+                    }
+
+                    if (includeRubric) html += generateRubric(subject, grade);
+                    html += '</div>';
+                    container.innerHTML = html;
+                    container.scrollIntoView({ behavior: 'smooth' });
+                    showSuccess('Worksheet generated successfully!');
+                } catch (e) {
+                    console.error(e);
+                    showError('Error: ' + e.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnText;
+                }
+            }, 100);
+        }
+
+        function downloadPDF() {
+            showSuccess('Opening print dialog. Select "Save as PDF" in your printer options.');
+            setTimeout(() => window.print(), 300);
+        }
+
+        // ===== KEYBOARD NAVIGATION =====
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                generateWorksheet();
+            }
+            if (e.key === 'Tab') {
+                document.body.classList.add('keyboard-nav');
+            }
+        });
+        document.addEventListener('mousedown', () => {
+            document.body.classList.remove('keyboard-nav');
+        });
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStrands();
+            updateTestOptions();
+            document.getElementById('grade').addEventListener('change', updateStrands);
+            document.getElementById('testType').addEventListener('change', updateTestOptions);
+            
+            document.getElementById('numQuestions').addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                if (val < CONFIG.minQuestions) e.target.value = CONFIG.minQuestions;
+                if (val > CONFIG.maxQuestions) e.target.value = CONFIG.maxQuestions;
+            });
+        });
     </script>
 </body>
 </html>
