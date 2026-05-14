@@ -3,486 +3,344 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI-Powered Ontario EQAO Worksheet Generator with Paper-Saving Layout">
-    <title>EQAO Worksheet Generator - Ontario Curriculum</title>
+    <title>EQAO Worksheet Generator - Phase 1</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            line-height: 1.5;
-            color: #333;
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 25px 30px;
-            text-align: center;
-        }
-        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
-        .header p { font-size: 1.05em; opacity: 0.9; }
-        .content { padding: 30px; }
-        .settings-panel {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-        .api-key-box {
-            background: #fff8e1;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .api-key-box label { font-weight: 600; color: #856404; display: block; margin-bottom: 5px; }
-        .api-key-row { display: flex; gap: 10px; align-items: center; }
-        .api-key-row input { flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-size: 0.95em; }
-        .settings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-weight: 600; margin-bottom: 6px; color: #333; font-size: 0.9em; }
-        .form-group select, .form-group input {
-            padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-size: 0.95em;
-        }
-        .form-group select:focus, .form-group input:focus {
-            outline: none; border-color: #667eea;
-        }
-        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-        .checkbox-group input { width: 18px; height: 18px; cursor: pointer; }
-        .checkbox-group label { cursor: pointer; font-size: 0.9em; }
-        .button-group { display: flex; gap: 12px; flex-wrap: wrap; }
-        button {
-            padding: 12px 25px; font-size: 1em; font-weight: 600;
-            border: none; border-radius: 6px; cursor: pointer;
-            transition: all 0.2s; flex: 1; min-width: 180px;
-        }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(102, 126, 234, 0.3); }
-        .btn-secondary { background: #6c757d; color: white; }
-        .btn-secondary:hover:not(:disabled) { background: #5a6268; transform: translateY(-2px); }
-        .btn-success { background: #28a745; color: white; }
-        .btn-success:hover:not(:disabled) { background: #218838; transform: translateY(-2px); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: var(--text); line-height: 1.5; }
 
-        /* ===== PAPER-SAVING WORKSHEET LAYOUT ===== */
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+
+        /* Settings Panel */
+        .panel {
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 2rem; margin-bottom: 10px; color: var(--primary); }
+        .subtitle { color: var(--text-light); margin-bottom: 30px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; }
+        select, input {
+            width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 1rem;
+        }
+        .checkboxes { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; }
+        .checkbox-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button {
+            padding: 12px 24px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 1rem;
+        }
+        .btn-primary { background: var(--primary); color: white; flex: 2; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: #e5e7eb; color: #374151; flex: 1; }
+        .btn-print { background: #10b981; color: white; flex: 1; }
+
+        /* Worksheet Layout (Paper-Saving) */
         .worksheet {
             background: white;
+            padding: 0.6in; /* Reduced margins for paper saving */
             max-width: 8.5in;
             margin: 0 auto;
-            padding: 0.6in;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            font-family: 'Times New Roman', serif;
-            font-size: 10.5pt;
-            line-height: 1.4;
+            display: none;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
         }
-        .worksheet-header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-        }
-        .worksheet-header h2 { font-size: 20pt; margin-bottom: 4px; }
-        .worksheet-header .info {
-            display: flex; justify-content: space-between;
-            margin-top: 10px; font-size: 10pt; gap: 10px; flex-wrap: wrap;
-        }
-        .instructions {
-            font-size: 10pt; padding: 8px 12px; background: #f5f5f5;
-            border-left: 3px solid #555; margin-bottom: 18px;
-        }
+        .worksheet.active { display: block; }
+        
+        .ws-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .ws-header h2 { font-size: 24pt; font-family: 'Times New Roman', serif; }
+        .ws-info { display: flex; justify-content: space-between; margin-top: 15px; font-family: 'Times New Roman', serif; font-size: 11pt; }
+        
         .question { margin-bottom: 18px; page-break-inside: avoid; }
-        .q-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
-        .q-number { font-weight: bold; font-size: 10.5pt; min-width: 70px; }
-        .q-strand { background: #eef2ff; color: #4f46e5; font-size: 9pt; padding: 2px 8px; border-radius: 12px; white-space: nowrap; }
-        .q-text { font-size: 10.5pt; margin-bottom: 8px; }
+        .q-head { font-weight: bold; font-size: 11pt; margin-bottom: 5px; font-family: 'Times New Roman', serif; }
+        .q-text { font-size: 10.5pt; margin-bottom: 8px; font-family: 'Times New Roman', serif; }
         
         /* 2-Column Multiple Choice */
-        .mc-grid { column-count: 2; column-gap: 25px; }
-        .mc-option { margin-bottom: 6px; break-inside: avoid; padding: 4px 0; }
-        .mc-option::before { content: "◯ "; font-weight: 500; }
+        .mc-grid { column-count: 2; column-gap: 30px; padding-left: 15px; font-family: 'Times New Roman', serif; font-size: 10.5pt; }
+        .mc-item { break-inside: avoid; margin-bottom: 5px; padding-left: 10px; }
+        .mc-item::before { content: "◯ "; font-weight: bold; }
 
-        .answer-space { border: 1px solid #999; min-height: 60px; margin-top: 6px; padding: 6px; background: #fafafa; }
-        
-        /* 3-Column Compact Answer Key */
-        .answer-key-compact {
-            page-break-before: always;
-            column-count: 3;
+        .answer-space { border: 1px dashed #999; min-height: 50px; margin-top: 5px; background: #fafafa; }
+
+        /* 3-Column Answer Key */
+        .answer-key { 
+            page-break-before: always; 
+            column-count: 3; 
             column-gap: 15px;
-            font-size: 9.5pt;
-            background: #f8fafc;
+            margin-top: 20px; 
             padding: 15px;
-            border: 1px solid #e2e8f0;
-            margin-top: 15px;
-        }
-        .ak-item { break-inside: avoid; margin-bottom: 5px; line-height: 1.3; }
-        .ak-item strong { color: #0f172a; }
-
-        .rubric {
-            page-break-before: always;
             border: 2px solid #333;
-            margin-top: 15px;
-            font-size: 9.5pt;
+            font-family: 'Times New Roman', serif;
+            font-size: 9pt;
         }
-        .rubric h3 { background: #333; color: white; padding: 10px; margin: 0; }
-        .rubric table { width: 100%; border-collapse: collapse; }
-        .rubric th, .rubric td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        .rubric th { background: #f1f5f9; }
+        .ak-item { break-inside: avoid; margin-bottom: 5px; }
+        .ak-item strong { margin-right: 5px; }
 
-        .diagram-container { margin: 8px 0; padding: 8px; text-align: center; }
-        .diagram-container svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-
-        /* Print Optimizations */
+        /* Print Styles */
         @media print {
-            body { background: white; padding: 0; }
-            .container { box-shadow: none; max-width: 100%; }
-            .header, .content > *:not(.preview-container), .settings-panel, .button-group { display: none !important; }
-            .worksheet { box-shadow: none; padding: 0.5in; width: 100%; max-width: none; }
-            .no-print { display: none !important; }
+            body { background: white; }
+            .container { margin: 0; padding: 0; max-width: 100%; }
+            .panel { display: none; }
+            .worksheet { border: none; box-shadow: none; display: block !important; padding: 0.5in; max-width: 100%; }
             .mc-grid { column-count: 2 !important; }
-            .answer-key-compact { column-count: 3 !important; }
-        }
-
-        @media (max-width: 768px) {
-            .content { padding: 20px; }
-            .settings-grid { grid-template-columns: 1fr; }
-            .button-group { flex-direction: column; }
-            button { min-width: 100%; }
-        }
-
-        .preview-container { margin-top: 25px; display: none; }
-        .preview-container.active { display: block; }
-        .info-box { background: #e0f2fe; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; border-radius: 4px; font-size: 0.9em; }
-        .loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9); z-index: 1000;
-            display: none; align-items: center; justify-content: center; flex-direction: column;
-        }
-        .loading-overlay.active { display: flex; }
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid #e2e8f0;
-            border-top-color: #667eea; border-radius: 50%;
-            animation: spin 1s linear infinite; margin-bottom: 15px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .status-text { font-size: 1.1em; color: #475569; margin-top: 10px; }
-        .error-toast {
-            position: fixed; bottom: 30px; right: 30px; background: #fee2e2;
-            color: #991b1b; padding: 15px 20px; border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 1001;
-            display: none; max-width: 400px;
+            .answer-key { column-count: 3 !important; border: none; }
         }
     </style>
 </head>
 <body>
-    <div class="container" role="main">
-        <div class="header">
-            <h1>🤖 AI-Powered EQAO Generator</h1>
-            <p>Unique, Unlimited Ontario Math Worksheets • Paper-Saving Layout • Gemini AI</p>
+
+<div class="container">
+    <!-- Settings Panel -->
+    <div class="panel no-print">
+        <h1>📚 EQAO Worksheet Generator</h1>
+        <p class="subtitle">Algorithmic Phase 1: Unlimited Questions • No API Key • Paper-Saving</p>
+        
+        <div class="grid">
+            <div>
+                <label>Grade Level</label>
+                <select id="grade">
+                    <option value="3">Grade 3</option>
+                    <option value="6">Grade 6</option>
+                    <option value="9">Grade 9 (MTH1W)</option>
+                </select>
+            </div>
+            <div>
+                <label>Test Type</label>
+                <select id="type">
+                    <option value="custom">Custom Practice</option>
+                    <option value="full">Full-Length EQAO Test</option>
+                </select>
+            </div>
+            <div id="strand-group">
+                <label>Strand</label>
+                <select id="strand">
+                    <option value="all">All Strands (Balanced)</option>
+                    <option value="number">Number Sense & Algebra</option>
+                    <option value="measurement">Measurement</option>
+                    <option value="geometry">Geometry & Spatial Sense</option>
+                    <option value="data">Data & Probability</option>
+                </select>
+            </div>
+            <div id="count-group">
+                <label>Number of Questions</label>
+                <input type="number" id="count" min="1" max="50" value="10">
+            </div>
         </div>
 
-        <div class="content">
-            <div class="info-box">
-                <strong>💡 How it works:</strong> Enter your free Gemini API key once per session. Select grade, strand, and question count. Click generate to get a fresh, unique worksheet instantly. All keys are stored in memory only.
-            </div>
+        <div class="checkboxes">
+            <label class="checkbox-item"><input type="checkbox" id="include-key" checked> Answer Key</label>
+            <label class="checkbox-item"><input type="checkbox" id="include-rubric"> Rubric</label>
+        </div>
 
-            <div class="settings-panel">
-                <div class="api-key-box">
-                    <label for="apiKey">🔑 Gemini API Key (Free from Google AI Studio)</label>
-                    <div class="api-key-row">
-                        <input type="password" id="apiKey" placeholder="AIzaSyDIx0iwJloKHZ1vxLPNWGYOiNwYBhBHH_o" autocomplete="off">
-                        <button class="btn-secondary" onclick="lockApiKey()" style="min-width: auto; flex: 0 0 auto;">Lock Key</button>
-                    </div>
-                    <small style="color: #856404; display: block; margin-top: 5px;">🔒 Never stored locally. Clear browser cache to remove. <a href="https://aistudio.google.com/apikey" target="_blank">Get free key</a></small>
-                </div>
-
-                <div class="settings-grid">
-                    <div class="form-group">
-                        <label for="grade">Grade Level:</label>
-                        <select id="grade">
-                            <option value="3">Grade 3 - Primary EQAO</option>
-                            <option value="6">Grade 6 - Junior EQAO</option>
-                            <option value="9">Grade 9 - Math Assessment</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="testType">Test Type:</label>
-                        <select id="testType">
-                            <option value="custom">Custom Practice</option>
-                            <option value="full">Full-Length EQAO Test</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="strand">Strand/Topic:</label>
-                        <select id="strand">
-                            <option value="all">All Strands (Balanced Mix)</option>
-                            <option value="number">Number Sense & Numeration</option>
-                            <option value="measurement">Measurement</option>
-                            <option value="geometry">Geometry & Spatial Sense</option>
-                            <option value="algebra">Patterning & Algebra</option>
-                            <option value="data">Data Management & Probability</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="numQGroup">
-                        <label for="numQuestions">Questions (5-20):</label>
-                        <input type="number" id="numQuestions" min="5" max="20" value="10">
-                    </div>
-                </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="includeAnswers" checked>
-                    <label for="includeAnswers">Include Answer Key (Compact 3-Column)</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="includeRubric" checked>
-                    <label for="includeRubric">Include Ontario Rubric</label>
-                </div>
-
-                <div class="button-group no-print">
-                    <button class="btn-primary" id="generateBtn" onclick="generateWorksheet()">🤖 Generate AI Worksheet</button>
-                    <button class="btn-success" onclick="window.print()">🖨️ Print Worksheet</button>
-                    <button class="btn-secondary" onclick="downloadPDF()">📄 Download PDF</button>
-                </div>
-            </div>
-
-            <div id="previewContainer" class="preview-container" role="region"></div>
+        <div class="btn-group">
+            <button class="btn-primary" onclick="generate()">⚡ Generate Worksheet</button>
+            <button class="btn-print" onclick="window.print()">🖨️ Print / PDF</button>
         </div>
     </div>
 
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-        <div class="status-text" id="statusText">Connecting to Gemini AI...</div>
-    </div>
+    <!-- Worksheet Output -->
+    <div id="output" class="worksheet"></div>
+</div>
 
-    <div class="error-toast" id="errorToast"></div>
-
-   <script>
-    let GEMINI_KEY = null;
-    const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
-
-    // ===== UI HELPERS =====
-    function lockApiKey() {
-        const input = document.getElementById('apiKey');
-        const val = input.value.trim();
-        if (val.length < 39) return showToast('⚠️ Key looks too short. Gemini keys start with "AIzaSy..."', 'error');
-        GEMINI_KEY = val;
-        input.value = '••••••••••••••••••••••••••••••••';
-        input.disabled = true;
-        showToast('🔑 Key secured for this session', 'success');
+<script>
+// ===== 1. TEMPLATE DATABASE =====
+// Variables: {min, max, step}. Logic uses simple math.
+const templates = {
+    3: {
+        number: [
+            { t: "Mia has {a} stickers. She buys {b} more. How many does she have now?", v: {a:[10,50], b:[5,20]}, ans: "a+b", opts: ["a+b", "a-b", "a*b", "a/b"] },
+            { t: "A toy costs ${c}. You have ${d}. How much more money do you need?", v: {c:[20,99], d:[5,19], c_gt_d:true}, ans: "c-d", opts: ["c-d", "d-c", "c+d", "c*d"] },
+            { t: "What is {a} x {b}?", v: {a:[2,9], b:[2,9]}, ans: "a*b", opts: ["a*b", "a+b", "a*b-a", "a*b+b"] },
+            { t: "There are {a} apples shared equally among {b} baskets. How many in each?", v: {a:[2,9], b:[2,5], prod:true}, ans: "a/b", opts: ["a/b", "b/a", "a+b", "a-b"] },
+            { t: "Which fraction is larger: {a}/{b} or {c}/{b}?", v: {a:[1,8], b:[3,9], c:[1,8]}, ans: "a>c?`${a}/${b}`:`${c}/${b}`" }
+        ],
+        measurement: [
+            { t: "A rectangle is {l} cm long and {w} cm wide. What is the perimeter?", v: {l:[5,20], w:[2,10]}, ans: "2*(l+w)", opts: ["2*(l+w)", "l*w", "l+w", "2*l+w"] },
+            { t: "What is the area of a square with side length {s} cm?", v: {s:[2,10]}, ans: "s*s", opts: ["s*s", "4*s", "s+s", "s/2"] },
+            { t: "If a movie starts at 2:00 PM and lasts {h} hours, when does it end?", v: {h:[1,3]}, ans: `${(2+{h})}:00 PM`, opts: [`${(2+{h})}:00 PM`, `${(1+{h})}:00 PM`, `${(2+{h}+12)}:00 AM`, `12:${h*10} PM`] }
+        ],
+        geometry: [
+            { t: "How many sides does a shape with {n} vertices have?", v: {n:[3,8]}, ans: "{n}", opts: ["{n}", "{n}+1", "{n}-1", "{n}*2"] },
+            { t: "Which shape has 4 equal sides and 4 right angles?", v: {}, ans: "Square", opts: ["Square", "Rectangle", "Circle", "Triangle"] }
+        ],
+        data: [
+            { t: "In a survey, 5 kids like pizza and 3 like burgers. How many kids were surveyed?", v: {}, ans: "8", opts: ["8", "2", "15", "10"] }
+        ]
+    },
+    6: {
+        number: [
+            { t: "What is 25% of ${a}?", v: {a:[10,200], step:4}, ans: "a*0.25", opts: ["a*0.25", "a*0.5", "a*0.1", "a/2"] },
+            { t: "Evaluate: {a}² + {b}", v: {a:[2,10], b:[1,20]}, ans: "a*a+b", opts: ["a*a+b", "(a+b)*2", "a+b*2", "a*a-b"] },
+            { t: "Solve for x: 3x = {prod}", v: {x:[2,10], prod_is_3x:true}, ans: "{x}", opts: ["{x}", "{prod}", "{prod}/3", "{prod}*3"] },
+            { t: "Order these from least to greatest: 0.{a}, {b}%, 1/{c}", v: {a:[1,8], b:[20,80], c:[2,4]}, ans: "0.{a}", opts: ["0.{a}", "{b}%", "1/{c}", "1/{a}"] }
+        ],
+        measurement: [
+            { t: "Calculate the volume of a rectangular prism: L={l}, W={w}, H={h} cm", v: {l:[2,5], w:[2,5], h:[2,5]}, ans: "l*w*h", opts: ["l*w*h", "2*(l*w+h)", "l*w+h", "l+w+h"] },
+            { t: "A triangle has base {b} and height {h}. What is the area?", v: {b:[2,12], h:[2,10]}, ans: "0.5*b*h", opts: ["0.5*b*h", "b*h", "b+h", "2*b*h"] }
+        ],
+        geometry: [
+            { t: "What is the sum of angles in a triangle?", v: {}, ans: "180°", opts: ["180°", "360°", "90°", "270°"] },
+            { t: "Which pair of angles are complementary (add to 90°)?", v: {a:[10,40], b:[10,40]}, ans: `${a}° & ${90-a}°` }
+        ]
+    },
+    9: {
+        number: [
+            { t: "Simplify: 2x + 5x - 3x", v: {}, ans: "4x", opts: ["4x", "10x", "4", "7x"] },
+            { t: "Expand: (x + {a})(x + {b})", v: {a:[1,5], b:[1,5]}, ans: "x^2 + {a+b}x + {a*b}", opts: ["x^2 + {a+b}x + {a*b}", "x^2 + {a*b}x + {a+b}", "x^2 + {a-b}x + {a*b}", "x^2 + {a*b}"] },
+            { t: "Factor: x² + {sum}x + {prod}", v: {a:[1,9], b:[1,9], sum_is_a_plus_b:true, prod_is_a_times_b:true}, ans: "(x + {a})(x + {b})", opts: ["(x + {a})(x + {b})", "(x - {a})(x - {b})", "(x + {prod})(x + {sum})", "(x + {a})(x - {b})"] }
+        ],
+        measurement: [
+            { t: "Find the hypotenuse of a right triangle with legs {a} and {b}.", v: {a:[3,12], b:[3,12]}, ans: "sqrt(a*a + b*b).toFixed(1)", opts: ["sqrt(a*a + b*b)", "a + b", "2*(a+b)", "sqrt(a*a - b*b)"] },
+            { t: "Surface area of a cube with side {s}.", v: {s:[1,10]}, ans: "6*s*s", opts: ["6*s*s", "s*s*s", "4*s*s", "6*s"] }
+        ]
     }
+};
 
-    async function testApiKey() {
-        if (!GEMINI_KEY) return showToast('Enter and lock your key first', 'error');
-        setLoading(true, '🔍 Testing connection...');
-        try {
-            const res = await fetch(`${API_ENDPOINT}?key=${GEMINI_KEY}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({contents: [{parts: [{text: 'Reply: OK'}]}]})
+// ===== 2. LOGIC ENGINE =====
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function solve(expr, vars) {
+    try {
+        // Create a function context with variables available
+        const func = new Function(...Object.keys(vars), `return ${expr}`);
+        let res = func(...Object.values(vars));
+        return typeof res === 'number' ? Math.round(res * 100) / 100 : res;
+    } catch { return "Error"; }
+}
+
+function fill(str, vars) {
+    return str.replace(/{(\w+)}/g, (m, p1) => vars[p1] !== undefined ? vars[p1] : m);
+}
+
+function generateQuestion(tpl) {
+    let vars = {};
+    // 1. Generate Variables
+    for (let k in tpl.v) {
+        const [min, max, step] = tpl.v[k];
+        if (k.includes('_')) continue; // Derived keys
+        vars[k] = rand(min, max);
+    }
+    // Handle specific logic flags (e.g. prod must be a*b)
+    if (tpl.v.prod_is_a_times_b) vars.prod = vars.a * vars.b;
+    if (tpl.v.sum_is_a_plus_b) vars.sum = vars.a + vars.b;
+
+    // 2. Calculate Answer
+    let ansRaw = solve(tpl.ans, vars);
+    let finalAns = typeof ansRaw === 'string' ? fill(ansRaw, vars) : ansRaw;
+
+    // 3. Generate Question Text
+    let text = fill(tpl.t, vars);
+
+    // 4. Generate Options (for MC)
+    let options = [finalAns];
+    if (tpl.opts) {
+        tpl.opts.forEach(o => {
+            let val = solve(o, vars);
+            val = typeof val === 'string' ? fill(val, vars) : val;
+            if (!options.includes(val)) options.push(val);
+        });
+        // Fill up to 4 if needed
+        while (options.length < 4) options.push(finalAns + rand(1,10)); 
+    }
+    
+    // Shuffle Options
+    options.sort(() => Math.random() - 0.5);
+
+    return { text, options, finalAns };
+}
+
+// ===== 3. UI CONTROLLER =====
+function generate() {
+    const grade = document.getElementById('grade').value;
+    const type = document.getElementById('type').value;
+    const strand = document.getElementById('strand').value;
+    const countInput = document.getElementById('count').value;
+    
+    const totalQ = type === 'full' ? (grade === '9' ? 40 : 36) : parseInt(countInput) || 10;
+    
+    let pool = templates[grade][strand] || [];
+    if (strand === 'all') {
+        // Merge all strands
+        Object.values(templates[grade]).forEach(arr => pool.push(...arr));
+    }
+    
+    // If pool is small, we loop/reuse templates (variables make them unique anyway)
+    const output = document.getElementById('output');
+    let html = `
+        <div class="ws-header">
+            <h2>${type === 'full' ? 'EQAO PRACTICE TEST' : 'MATHEMATICS WORKSHEET'}</h2>
+            <div style="font-size:12pt; margin-top:5px;">Grade ${grade} • Ontario Curriculum</div>
+            <div class="ws-info">
+                <span>Name: __________________________</span>
+                <span>Date: ____________</span>
+                <span>Score: ___ / ${totalQ}</span>
+            </div>
+        </div>
+        <div style="padding:10px; background:#f0f0f0; font-size:10pt; margin-bottom:15px; border-left:4px solid #333;">
+            <strong>Instructions:</strong> Read carefully. Show all steps. Calculators are [Allowed / Not Allowed].
+        </div>
+    `;
+
+    let answers = [];
+
+    for (let i = 0; i < totalQ; i++) {
+        // Pick random template
+        const tpl = pool[rand(0, pool.length - 1)];
+        const q = generateQuestion(tpl);
+
+        html += `<div class="question">
+            <div class="q-head">Question ${i + 1}.</div>
+            <div class="q-text">${q.text}</div>`;
+        
+        if (q.options.length > 1) {
+            html += `<div class="mc-grid">`;
+            q.options.forEach(opt => {
+                html += `<div class="mc-item">${opt}</div>`;
             });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error?.message || `HTTP ${res.status}`);
-            }
-            const data = await res.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            if (text.includes('OK')) {
-                showToast('✅ Connection successful! Ready to generate.', 'success');
-            } else {
-                showToast('⚠️ Key works but response unexpected. Try generating anyway.', 'error');
-            }
-        } catch (e) {
-            showToast('❌ ' + e.message, 'error');
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    function showToast(msg, type = 'error') {
-        const toast = document.getElementById('errorToast');
-        toast.textContent = msg;
-        toast.style.background = type === 'success' ? '#dcfce7' : '#fee2e2';
-        toast.style.color = type === 'success' ? '#166534' : '#991b1b';
-        toast.style.display = 'block';
-        setTimeout(() => toast.style.display = 'none', 4000);
-    }
-
-    function setLoading(show, text) {
-        document.getElementById('loadingOverlay').classList.toggle('active', show);
-        document.getElementById('statusText').textContent = text || 'Working...';
-        document.getElementById('generateBtn').disabled = show;
-        document.getElementById('testBtn').disabled = show;
-    }
-
-    // ===== PROMPT BUILDER =====
-    function buildPrompt() {
-        const grade = document.getElementById('grade').value;
-        const type = document.getElementById('testType').value;
-        const strand = document.getElementById('strand').value;
-        const count = type === 'full' ? (grade === '9' ? 40 : 36) : parseInt(document.getElementById('numQuestions').value) || 10;
-        
-        const strandMap = {
-            'all': 'All strands (balanced EQAO distribution)',
-            'number': 'Number Sense and Numeration',
-            'measurement': 'Measurement',
-            'geometry': 'Geometry and Spatial Sense',
-            'algebra': 'Patterning and Algebra',
-            'data': 'Data Management and Probability'
-        };
-
-        return `You are an Ontario EQAO math expert. Generate exactly ${count} unique, grade-${grade} math questions.
-Focus: ${strandMap[strand]}
-Rules:
-1. Return ONLY a valid JSON array. No markdown, no extra text.
-2. Each question: {"type":"multipleChoice"|"shortAnswer","question":"text","options":["A","B","C","D"],"answer":"correct"}
-3. For shortAnswer, omit "options" and put explanation in "answer".
-4. NEVER repeat concepts. Use Ontario curriculum contexts.
-5. Multiple choice: exactly 4 options, one correct letter (A/B/C/D).`;
-    }
-
-    // ===== API CALL =====
-    async function callGemini() {
-        const res = await fetch(`${API_ENDPOINT}?key=${GEMINI_KEY}`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                contents: [{parts: [{text: buildPrompt()}]}],
-                generationConfig: {temperature: 0.7, maxOutputTokens: 4000}
-            })
-        });
-
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            const msg = err.error?.message || `HTTP ${res.status}`;
-            if (res.status === 403) throw new Error('Key not authorized. Enable "Generative Language API" for this key.');
-            if (res.status === 429) throw new Error('Rate limit. Wait 60s and retry.');
-            throw new Error(msg);
-        }
-
-        const data = await res.json();
-        if (data.error) throw new Error(data.error.message);
-        
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        if (!text.trim()) throw new Error('Empty response. Try again.');
-        
-        // Extract JSON
-        let clean = text;
-        const block = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (block) clean = block[1];
-        else {
-            const brace = text.match(/{[\s\S]*}/);
-            if (brace) clean = brace[0];
-        }
-        
-        try {
-            const questions = JSON.parse(clean);
-            if (!Array.isArray(questions) || questions.length === 0) throw new Error('Invalid format');
-            return questions;
-        } catch (e) {
-            console.error('Parse error:', e);
-            throw new Error('Could not parse response. Try fewer questions.');
-        }
-    }
-
-    // ===== RENDERER =====
-    function renderWorksheet(questions) {
-        const container = document.getElementById('previewContainer');
-        const grade = document.getElementById('grade').value;
-        const type = document.getElementById('testType').value;
-        const includeAns = document.getElementById('includeAnswers').checked;
-        const includeRub = document.getElementById('includeRubric').checked;
-        const title = type === 'full' ? 'FULL-LENGTH PRACTICE TEST' : 'PRACTICE WORKSHEET';
-
-        let html = `<div class="worksheet">
-            <div class="worksheet-header">
-                <h2>${title}</h2>
-                <div style="font-size:12pt;margin-bottom:5px">Grade ${grade} Mathematics • Ontario Curriculum</div>
-                <div class="info">
-                    <div>Name: _________________________</div>
-                    <div>Date: _______________</div>
-                    <div>Score: _____ / ${questions.length}</div>
-                </div>
-            </div>
-            <div class="instructions">Read carefully. Show all work. Diagrams not to scale.</div>`;
-
-        questions.forEach((q, i) => {
-            html += `<div class="question">
-                <div class="q-header">
-                    <span class="q-number">Question ${i+1}</span>
-                    <span class="q-strand">${grade} Math</span>
-                </div>
-                <div class="q-text">${q.question}</div>`;
-            if (q.type === 'multipleChoice' && q.options) {
-                html += `<div class="mc-grid">`;
-                q.options.forEach(opt => html += `<div class="mc-option">${opt}</div>`);
-                html += `</div>`;
-            } else {
-                html += `<div class="answer-space"></div>`;
-            }
             html += `</div>`;
-        });
-
-        if (includeAns) {
-            html += `<div class="answer-key-compact">`;
-            questions.forEach((q, i) => html += `<div class="ak-item"><strong>Q${i+1}:</strong> ${q.answer}</div>`);
-            html += `</div>`;
-        }
-        if (includeRub) {
-            html += `<div class="rubric">
-                <h3>Ontario Achievement Chart</h3>
-                <table><tr><th>Criteria</th><th>Level 4</th><th>Level 3</th><th>Level 2</th><th>Level 1</th></tr>
-                <tr><td><strong>Knowledge</strong></td><td>Thorough</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
-                <tr><td><strong>Thinking</strong></td><td>High effectiveness</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
-                <tr><td><strong>Communication</strong></td><td>Clear & precise</td><td>Considerable clarity</td><td>Some clarity</td><td>Limited clarity</td></tr>
-                <tr><td><strong>Application</strong></td><td>High degree</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
-                </table></div>`;
+        } else {
+            html += `<div class="answer-space"></div>`;
         }
         html += `</div>`;
-        container.innerHTML = html;
-        container.classList.add('active');
-        container.scrollIntoView({behavior: 'smooth'});
+        answers.push(`<span class="ak-item"><strong>Q${i+1}:</strong> ${q.finalAns}</span>`);
     }
 
-    // ===== MAIN =====
-    async function generateWorksheet() {
-        if (!GEMINI_KEY) return showToast('🔑 Lock your API key first', 'error');
-        setLoading(true, '🤖 Generating unique questions...');
-        try {
-            const questions = await callGemini();
-            renderWorksheet(questions);
-            showToast(`✅ Generated ${questions.length} unique questions!`, 'success');
-        } catch (e) {
-            console.error(e);
-            showToast('⚠️ ' + e.message, 'error');
-        } finally {
-            setLoading(false);
-        }
+    if (document.getElementById('include-key').checked) {
+        html += `<div class="answer-key"><h3>🔑 Answer Key</h3>${answers.join('')}</div>`;
+    }
+    
+    if (document.getElementById('include-rubric').checked) {
+        html += `<div style="page-break-before:always; padding:20px; border:2px solid #333;">
+            <h3>📊 Assessment Rubric</h3>
+            <table style="width:100%; border-collapse:collapse; font-size:10pt;">
+                <tr style="background:#eee;"><th>Criteria</th><th>Lvl 4 (80-100%)</th><th>Lvl 3 (70-79%)</th><th>Lvl 2 (60-69%)</th><th>Lvl 1 (50-59%)</th></tr>
+                <tr><td>Knowledge</td><td>Thorough understanding</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
+                <tr><td>Thinking</td><td>High effectiveness</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
+            </table></div>`;
     }
 
-    function downloadPDF() {
-        showToast('🖨️ In print dialog, select "Save as PDF"', 'info');
-        setTimeout(window.print, 200);
-    }
+    output.innerHTML = html;
+    output.classList.add('active');
+    output.scrollIntoView({ behavior: 'smooth' });
+}
 
-    // Init
-    document.getElementById('testType').addEventListener('change', (e) => {
-        document.getElementById('numQGroup').style.display = e.target.value === 'full' ? 'none' : 'flex';
-    });
-    document.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') generateWorksheet(); });
+// UI Toggles
+document.getElementById('type').addEventListener('change', (e) => {
+    const isFull = e.target.value === 'full';
+    document.getElementById('count-group').style.display = isFull ? 'none' : 'block';
+    document.getElementById('strand-group').style.display = isFull ? 'none' : 'block';
+});
 </script>
 </body>
 </html>
