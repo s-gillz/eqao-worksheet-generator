@@ -270,18 +270,46 @@
 
     <div class="error-toast" id="errorToast"></div>
 
-    <script>
+   <script>
     let GEMINI_KEY = null;
+    const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
 
-    // UI Helpers
+    // ===== UI HELPERS =====
     function lockApiKey() {
         const input = document.getElementById('apiKey');
         const val = input.value.trim();
-        if (val.length < 10) return showToast('Please paste a valid Gemini API key.', 'error');
+        if (val.length < 39) return showToast('⚠️ Key looks too short. Gemini keys start with "AIzaSy..."', 'error');
         GEMINI_KEY = val;
-        input.value = '••••••••••••••••';
+        input.value = '••••••••••••••••••••••••••••••••';
         input.disabled = true;
-        showToast('🔑 API key secured for this session.', 'success');
+        showToast('🔑 Key secured for this session', 'success');
+    }
+
+    async function testApiKey() {
+        if (!GEMINI_KEY) return showToast('Enter and lock your key first', 'error');
+        setLoading(true, '🔍 Testing connection...');
+        try {
+            const res = await fetch(`${API_ENDPOINT}?key=${GEMINI_KEY}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({contents: [{parts: [{text: 'Reply: OK'}]}]})
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error?.message || `HTTP ${res.status}`);
+            }
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (text.includes('OK')) {
+                showToast('✅ Connection successful! Ready to generate.', 'success');
+            } else {
+                showToast('⚠️ Key works but response unexpected. Try generating anyway.', 'error');
+            }
+        } catch (e) {
+            showToast('❌ ' + e.message, 'error');
+        } finally {
+            setLoading(false);
+        }
     }
 
     function showToast(msg, type = 'error') {
@@ -297,17 +325,10 @@
         document.getElementById('loadingOverlay').classList.toggle('active', show);
         document.getElementById('statusText').textContent = text || 'Working...';
         document.getElementById('generateBtn').disabled = show;
+        document.getElementById('testBtn').disabled = show;
     }
 
-    // Test Type Toggle
-    document.getElementById('testType').addEventListener('change', (e) => {
-        const numGroup = document.getElementById('numQGroup');
-        numGroup.style.display = e.target.value === 'full' ? 'none' : 'flex';
-        document.getElementById('numQuestions').value = e.target.value === 'full' ? '' : '10';
-        document.getElementById('strand').value = 'all';
-    });
-
-    // Prompt Builder
+    // ===== PROMPT BUILDER =====
     function buildPrompt() {
         const grade = document.getElementById('grade').value;
         const type = document.getElementById('testType').value;
@@ -315,90 +336,69 @@
         const count = type === 'full' ? (grade === '9' ? 40 : 36) : parseInt(document.getElementById('numQuestions').value) || 10;
         
         const strandMap = {
-            'all': 'All strands (balanced mix matching official EQAO distribution)',
-            'number': 'Number Sense and Numeration / Number Sense and Algebra',
+            'all': 'All strands (balanced EQAO distribution)',
+            'number': 'Number Sense and Numeration',
             'measurement': 'Measurement',
             'geometry': 'Geometry and Spatial Sense',
-            'algebra': 'Patterning and Algebra / Linear Relations',
-            'data': 'Data Management and Probability / Analytic Geometry'
+            'algebra': 'Patterning and Algebra',
+            'data': 'Data Management and Probability'
         };
 
-        const instructions = type === 'full' 
-            ? `This is a full-length EQAO practice test. Include exactly ${count} questions. Mix question types: ~60% multiple choice, ~30% short answer, ~10% long answer. Ensure progressive difficulty matching official EQAO pacing.`
-            : `Generate exactly ${count} practice questions. Mix multiple choice (~70%) and short answer (~30%). Focus on real-world contexts.`;
-
-        return `You are an expert Ontario EQAO math test creator. 
-${instructions}
-Grade: ${grade}
+        return `You are an Ontario EQAO math expert. Generate exactly ${count} unique, grade-${grade} math questions.
 Focus: ${strandMap[strand]}
-Curriculum Alignment: Ontario Mathematics Curriculum (2020)
 Rules:
-1. NEVER repeat questions or concepts. Each must be unique.
-2. Include clear, grade-appropriate wording.
-3. For MC: exactly 4 options (A,B,C,D), only 1 correct.
-4. For short answer: require showing work.
-5. Return ONLY a valid JSON array. NO markdown, NO explanations, NO extra text.
-JSON Schema for each question:
-{
-  "type": "multipleChoice" | "shortAnswer",
-  "question": "string",
-  "options": ["A", "B", "C", "D"], (omit for shortAnswer)
-  "answer": "correct option letter or short explanation"
-}`;
+1. Return ONLY a valid JSON array. No markdown, no extra text.
+2. Each question: {"type":"multipleChoice"|"shortAnswer","question":"text","options":["A","B","C","D"],"answer":"correct"}
+3. For shortAnswer, omit "options" and put explanation in "answer".
+4. NEVER repeat concepts. Use Ontario curriculum contexts.
+5. Multiple choice: exactly 4 options, one correct letter (A/B/C/D).`;
     }
 
-    // ✅ FIXED GEMINI API CALL
+    // ===== API CALL =====
     async function callGemini() {
-        const MODEL_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
-        
-        const res = await fetch(`${MODEL_URL}?key=${GEMINI_KEY}`, {
+        const res = await fetch(`${API_ENDPOINT}?key=${GEMINI_KEY}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                contents: [{ parts: [{ text: buildPrompt() }] }],
-                generationConfig: { temperature: 0.7, maxOutputTokens: 4000, topP: 0.95 }
+                contents: [{parts: [{text: buildPrompt()}]}],
+                generationConfig: {temperature: 0.7, maxOutputTokens: 4000}
             })
         });
 
         if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            if (res.status === 404) {
-                throw new Error('API endpoint not found. Please ensure:\n1. Your API key is valid\n2. Gemini API is enabled in Google Cloud\n3. You\'re using model: gemini-1.5-flash');
-            }
-            if (res.status === 403) {
-                throw new Error('API key not authorized. Enable "Gemini API" for your key in Google AI Studio.');
-            }
-            if (res.status === 429) {
-                throw new Error('Rate limit exceeded. Wait 60 seconds and try again.');
-            }
-            throw new Error(`API Error ${res.status}: ${errData.error?.message || 'Unknown error'}`);
+            const err = await res.json().catch(() => ({}));
+            const msg = err.error?.message || `HTTP ${res.status}`;
+            if (res.status === 403) throw new Error('Key not authorized. Enable "Generative Language API" for this key.');
+            if (res.status === 429) throw new Error('Rate limit. Wait 60s and retry.');
+            throw new Error(msg);
         }
 
         const data = await res.json();
         if (data.error) throw new Error(data.error.message);
         
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        if (!text.trim()) throw new Error('Empty response from AI. Try again.');
+        if (!text.trim()) throw new Error('Empty response. Try again.');
         
-        let cleanJson = text;
-        const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (codeBlock) cleanJson = codeBlock[1];
+        // Extract JSON
+        let clean = text;
+        const block = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (block) clean = block[1];
         else {
-            const braceMatch = text.match(/{[\s\S]*}/);
-            if (braceMatch) cleanJson = braceMatch[0];
+            const brace = text.match(/{[\s\S]*}/);
+            if (brace) clean = brace[0];
         }
         
         try {
-            const questions = JSON.parse(cleanJson);
-            if (!Array.isArray(questions) || questions.length === 0) throw new Error('Invalid format returned.');
+            const questions = JSON.parse(clean);
+            if (!Array.isArray(questions) || questions.length === 0) throw new Error('Invalid format');
             return questions;
         } catch (e) {
             console.error('Parse error:', e);
-            throw new Error('Could not parse AI response. Try fewer questions.');
+            throw new Error('Could not parse response. Try fewer questions.');
         }
     }
 
-    // Worksheet Renderer
+    // ===== RENDERER =====
     function renderWorksheet(questions) {
         const container = document.getElementById('previewContainer');
         const grade = document.getElementById('grade').value;
@@ -406,28 +406,26 @@ JSON Schema for each question:
         const includeAns = document.getElementById('includeAnswers').checked;
         const includeRub = document.getElementById('includeRubric').checked;
         const title = type === 'full' ? 'FULL-LENGTH PRACTICE TEST' : 'PRACTICE WORKSHEET';
-        const count = questions.length;
 
         let html = `<div class="worksheet">
             <div class="worksheet-header">
                 <h2>${title}</h2>
-                <div style="font-size:12pt; margin-bottom:5px;">Grade ${grade} Mathematics • Ontario Curriculum</div>
+                <div style="font-size:12pt;margin-bottom:5px">Grade ${grade} Mathematics • Ontario Curriculum</div>
                 <div class="info">
                     <div>Name: _________________________</div>
                     <div>Date: _______________</div>
-                    <div>Score: _____ / ${count}</div>
+                    <div>Score: _____ / ${questions.length}</div>
                 </div>
             </div>
-            <div class="instructions">Read each question carefully. Show all work and calculations. Use proper mathematical notation.</div>`;
+            <div class="instructions">Read carefully. Show all work. Diagrams not to scale.</div>`;
 
         questions.forEach((q, i) => {
             html += `<div class="question">
                 <div class="q-header">
-                    <span class="q-number">Question ${i + 1}</span>
-                    <span class="q-strand">${q.strand || 'Math'}</span>
+                    <span class="q-number">Question ${i+1}</span>
+                    <span class="q-strand">${grade} Math</span>
                 </div>
                 <div class="q-text">${q.question}</div>`;
-            
             if (q.type === 'multipleChoice' && q.options) {
                 html += `<div class="mc-grid">`;
                 q.options.forEach(opt => html += `<div class="mc-option">${opt}</div>`);
@@ -443,10 +441,9 @@ JSON Schema for each question:
             questions.forEach((q, i) => html += `<div class="ak-item"><strong>Q${i+1}:</strong> ${q.answer}</div>`);
             html += `</div>`;
         }
-
         if (includeRub) {
             html += `<div class="rubric">
-                <h3>Ontario Achievement Chart Rubric</h3>
+                <h3>Ontario Achievement Chart</h3>
                 <table><tr><th>Criteria</th><th>Level 4</th><th>Level 3</th><th>Level 2</th><th>Level 1</th></tr>
                 <tr><td><strong>Knowledge</strong></td><td>Thorough</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
                 <tr><td><strong>Thinking</strong></td><td>High effectiveness</td><td>Considerable</td><td>Some</td><td>Limited</td></tr>
@@ -457,35 +454,35 @@ JSON Schema for each question:
         html += `</div>`;
         container.innerHTML = html;
         container.classList.add('active');
-        container.scrollIntoView({ behavior: 'smooth' });
+        container.scrollIntoView({behavior: 'smooth'});
     }
 
-    // Main Generator
+    // ===== MAIN =====
     async function generateWorksheet() {
-        if (!GEMINI_KEY) return showToast('🔑 Please lock your Gemini API key first.', 'error');
-        
-        setLoading(true, '🤖 Generating unique EQAO questions...');
+        if (!GEMINI_KEY) return showToast('🔑 Lock your API key first', 'error');
+        setLoading(true, '🤖 Generating unique questions...');
         try {
             const questions = await callGemini();
             renderWorksheet(questions);
-            showToast(`✅ Success! ${questions.length} unique questions generated.`, 'success');
-        } catch (err) {
-            console.error(err);
-            showToast('⚠️ ' + err.message, 'error');
+            showToast(`✅ Generated ${questions.length} unique questions!`, 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('⚠️ ' + e.message, 'error');
         } finally {
             setLoading(false);
         }
     }
 
     function downloadPDF() {
-        showToast('🖨️ Opening print dialog. Select "Save as PDF".', 'info');
+        showToast('🖨️ In print dialog, select "Save as PDF"', 'info');
         setTimeout(window.print, 200);
     }
 
-    // Keyboard shortcut
-    document.addEventListener('keydown', e => {
-        if (e.ctrlKey && e.key === 'Enter') generateWorksheet();
+    // Init
+    document.getElementById('testType').addEventListener('change', (e) => {
+        document.getElementById('numQGroup').style.display = e.target.value === 'full' ? 'none' : 'flex';
     });
+    document.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') generateWorksheet(); });
 </script>
 </body>
 </html>
